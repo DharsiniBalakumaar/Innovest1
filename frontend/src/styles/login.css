@@ -1,0 +1,74 @@
+/* ===== Login Page ===== */
+
+.login-container {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8fbff;
+}
+
+.login-card {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 420px;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.login-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 6px;
+}
+
+.login-subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+
+.login-group {
+    margin-bottom: 16px;
+}
+
+.login-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #374151;
+}
+
+.login-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+}
+
+.login-group input:focus {
+    border-color: #1f4fd8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(31, 79, 216, 0.15);
+}
+
+.login-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #1f4fd8;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 12px;
+}
+
+.login-button:hover {
+    background-color: #1a43b8;
+}

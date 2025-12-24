@@ -1,0 +1,225 @@
+/* ===== Auth Pages Global Styling ===== */
+
+.auth-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fbff, #eef4ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.auth-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 900px;
+    border-radius: 12px;
+    padding: 32px 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.auth-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.auth-subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+
+.section-title {
+    margin-top: 32px;
+    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f4fd8;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 6px;
+}
+
+/* ===== Form Layout ===== */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full {
+    grid-column: span 2;
+}
+
+label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+input,
+select,
+textarea {
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #1f4fd8;
+    box-shadow: 0 0 0 2px rgba(31, 79, 216, 0.15);
+}
+
+/* ===== File Upload ===== */
+
+input[type="file"] {
+    padding: 8px;
+    background: #f9fafb;
+    border: 1px dashed #c7d2fe;
+}
+
+/* ===== Buttons ===== */
+
+.auth-button {
+    margin-top: 32px;
+    background: #1f4fd8;
+    color: white;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+.auth-button:hover {
+    background: #1a43b8;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group.full {
+        grid-column: span 1;
+    }
+}
+
+/* ===== Step Indicator ===== */
+.step-bar {
+    display: flex;
+    gap: 12px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 6px;
+    margin-bottom: 28px;
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    border-radius: 6px;
+}
+
+.step.active {
+    background: #ffffff;
+    color: #1f4fd8;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* ===== Section Card ===== */
+.section-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+}
+
+/* ===== Upload Boxes ===== */
+.upload-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.upload-box {
+    border: 2px dashed #c7d2fe;
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    background: #f8fbff;
+    cursor: pointer;
+}
+
+.upload-box span {
+    display: block;
+    font-size: 13px;
+    color: #1f4fd8;
+    font-weight: 600;
+    margin-top: 6px;
+}
+
+.upload-box small {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* ===== Bottom Buttons ===== */
+.action-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 32px;
+}
+
+.secondary-button {
+    background: #e5e7eb;
+    color: #111827;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+
+.secondary-button:hover {
+    background: #d1d5db;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .upload-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.step {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.step.active {
+    transform: translateY(-1px);
+}
