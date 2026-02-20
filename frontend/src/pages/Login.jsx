@@ -1,16 +1,48 @@
 import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthContext";
 import "../styles/login.css";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
-
+  const navigate = useNavigate();
+  const { login } = useAuth(); 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(form);
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        form
+      );
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("isLoggedIn", "true");              // ✅ ADD
+      localStorage.setItem("role", res.data.user.role);        // ✅ ADD
+
+      login(res.data.user.role, res.data.token, res.data.user); 
+
+      // 🔑 ROLE BASED REDIRECT
+      if (res.data.user.role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (res.data.user.role === "innovator") {
+        navigate("/innovator/dashboard");
+      }
+      else if (res.data.user.role === "investor") {
+        navigate("/investor/dashboard");
+      }else
+      {
+        navigate("/dashboard");
+      }
+
+    } catch (err) {
+      alert(err.response?.data?.message || "Login failed");
+    }
   };
 
   return (

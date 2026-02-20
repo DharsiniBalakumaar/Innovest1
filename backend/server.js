@@ -1,22 +1,31 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const path = require("path");
 
-dotenv.config();
+require("dotenv").config(); // 👈 dotenv MUST be first
 
-connectDB();
+// ✅ ADD THIS CHECK HERE ⬇️
+if (!process.env.JWT_SECRET) {
+  console.error("❌ JWT_SECRET is missing in .env file");
+  process.exit(1);
+}
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error(err));
 
-const PORT = process.env.PORT || 5000;
+// routes
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/innovator", require("./routes/innovatorRoutes"));
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+const PORT = 5000;
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));

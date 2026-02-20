@@ -1,39 +1,168 @@
-/* ===== Navbar ===== */
-
 .navbar {
-    width: 100%;
-    background-color: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
-    height: 80px;
     align-items: center;
+    padding: 18px 40px;
+    background: #ffffff;
+    border-bottom: 1px solid #eee;
 }
 
 .navbar-logo {
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 700;
-    color: #1f4fd8;
     text-decoration: none;
+    background: linear-gradient(90deg, #4f46e5, #9333ea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Links */
+.navbar-links {
+    display: flex;
+    gap: 25px;
+}
+
+.nav-link {
+    position: relative;
+    text-decoration: none;
+    font-size: 16px;
+    color: #333;
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: all 0.3s ease;
+}
+
+/* 🔥 HOVER POP EFFECT */
+.nav-link:hover {
+    background: linear-gradient(90deg, #4f46e5, #9333ea);
+    color: white;
+    box-shadow: 0 8px 20px rgba(147, 51, 234, 0.35);
+    transform: translateY(-2px);
+}
+
+/* ACTIVE LINK */
+.nav-link.active {
+    background: linear-gradient(90deg, #4f46e5, #9333ea);
+    color: white;
+}
+/* 
+.logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.logout-btn:hover {
+  color: #6a5cff;
+} */
+
+/* navbar.css */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 50px;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    /* Adds the "bar" shadow */
 }
 
 .navbar-links {
     display: flex;
-    gap: 30px;
+    gap: 25px;
+    align-items: center;
 }
 
+/* This removes the blue color and underlines from your links */
 .navbar-links a {
     text-decoration: none;
-    font-size: 15px;
+    color: #555;
     font-weight: 500;
-    color: #374151;
+    transition: color 0.3s;
 }
 
 .navbar-links a:hover {
-    color: #1f4fd8;
+    color: #6366f1;
+    /* Purple hover effect */
 }
 
-.navbar-links .active {
-    color: #1f4fd8;
+/* Style for that Logout button */
+.navbar-links button {
+    padding: 8px 16px;
+    background-color: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+} 
+
+/* navbar.css */
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 50px;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-logo {
+    font-size: 26px;
+    font-weight: 700;
+    text-decoration: none;
+    background: linear-gradient(90deg, #4f46e5, #9333ea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.navbar-links {
+    display: flex;
+    gap: 15px;
+    /* Tightened gap for a cleaner look */
+    align-items: center;
+}
+
+/* Base style for all links */
+.nav-link {
+    text-decoration: none;
+    font-size: 16px;
+    color: #555;
+    /* Default gray */
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* 🔥 HOVER EFFECT - Now correctly targeting the class */
+.nav-link:hover {
+    background: linear-gradient(90deg, #4f46e5, #9333ea);
+    color: white !important;
+    /* Forces the color change */
+    box-shadow: 0 8px 20px rgba(147, 51, 234, 0.35);
+    transform: translateY(-2px);
+}
+
+/* ACTIVE LINK - Stays highlighted */
+.nav-link.active {
+    background: linear-gradient(90deg, #4f46e5, #9333ea);
+    color: white !important;
+}
+
+/* Style for the Logout button to match the theme */
+.navbar-links button {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid #9333ea;
+    color: #9333ea;
+    border-radius: 999px;
+    cursor: pointer;
     font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.navbar-links button:hover {
+    background: #9333ea;
+    color: white;
 }
