@@ -1,31 +1,25 @@
 const express = require("express");
-const cors = require("cors");
 const mongoose = require("mongoose");
-const path = require("path");
-
-require("dotenv").config(); // 👈 dotenv MUST be first
-
-// ✅ ADD THIS CHECK HERE ⬇️
-if (!process.env.JWT_SECRET) {
-  console.error("❌ JWT_SECRET is missing in .env file");
-  process.exit(1);
-}
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error(err));
+// ── Existing routes you already have ──
+const authRoutes      = require("./routes/authRoutes");
+const innovatorRoutes = require("./routes/innovatorRoutes");
+const adminRoutes     = require("./routes/adminRoutes");
 
-// routes
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes"));
-app.use("/api/innovator", require("./routes/innovatorRoutes"));
+app.use("/api/auth",      authRoutes);
+app.use("/api/innovator", innovatorRoutes);
+app.use("/api/admin",     adminRoutes);
 
-const PORT = 5000;
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+// ── ADD THESE TWO LINES ──  ← THIS IS ALL YOU NEED
+const investorRoutes = require("./routes/investorRoutes");
+app.use("/api/investor", investorRoutes);
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => app.listen(5000, () => console.log("Server running on port 5000")))
+  .catch(err => console.error(err));
