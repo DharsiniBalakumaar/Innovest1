@@ -1,225 +1,200 @@
-/* ===== Auth Pages Global Styling ===== */
-
+/* ===== Auth Page - High-End Dark Theme ===== */
 .auth-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fbff, #eef4ff);
+    /* Theme radial gradient matching Homepage */
+    background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 40px;
+    padding: 60px 20px;
 }
 
 .auth-card {
-    background: #ffffff;
+    /* Transparent glass effect */
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     width: 100%;
-    max-width: 900px;
-    border-radius: 12px;
-    padding: 32px 40px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    max-width: 800px;
+    padding: 40px;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    /* Entrance animation */
+    animation: fadeInSlideUp 0.6s ease-out;
+}
+
+@keyframes fadeInSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .auth-title {
-    font-size: 26px;
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 8px;
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    text-align: center;
+    background: linear-gradient(to right, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .auth-subtitle {
-    font-size: 14px;
-    color: #6b7280;
-    margin-bottom: 24px;
+    font-size: 15px;
+    color: #94a3b8;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+/* DIFFERENTIATE: Section Cards (Subtle borders, no heavy white background) */
+.section-card {
+    background: rgba(15, 23, 42, 0.3);
+    /* Dark panel matching image_6.png cards */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 24px;
+    margin-top: 24px;
+    transition: border-color 0.3s ease;
+}
+
+.section-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
 }
 
 .section-title {
-    margin-top: 32px;
+    color: #818cf8;
+    /* Soft Indigo */
+    border-bottom: 1px solid rgba(129, 140, 248, 0.1);
     margin-bottom: 16px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f4fd8;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 6px;
+    font-size: 1.1rem;
 }
 
-/* ===== Form Layout ===== */
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px 24px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group.full {
-    grid-column: span 2;
-}
-
-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 6px;
-}
-
+/* Form Inputs (Fixed Autofill & Focus) */
 input,
-select,
-textarea {
-    padding: 10px 12px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    font-size: 14px;
-    outline: none;
+select {
+    background: rgba(2, 6, 23, 0.5);
+    /* Deep dark input background */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
     transition: all 0.2s ease;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
-    border-color: #1f4fd8;
-    box-shadow: 0 0 0 2px rgba(31, 79, 216, 0.15);
+input:focus {
+    border-color: #6366f1;
+    background: rgba(2, 6, 23, 0.8);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
 }
 
-/* ===== File Upload ===== */
-
-input[type="file"] {
-    padding: 8px;
-    background: #f9fafb;
-    border: 1px dashed #c7d2fe;
+/* 🛡️ THE FIX FOR BROWSER AUTOFILL (The white background bug) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    -webkit-text-fill-color: white !important;
+    /* These three properties force the autofill to stay dark/transparent */
+    -webkit-box-shadow: 0 0 0px 1000px rgba(2, 6, 23, 1) inset;
+    transition: background-color 5000s ease-in-out 0s;
+    border-radius: 10px;
 }
 
-/* ===== Buttons ===== */
-
+/* Buttons (Glow Animation) */
 .auth-button {
-    margin-top: 32px;
-    background: #1f4fd8;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
     color: white;
-    padding: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    border-radius: 8px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 700;
     border: none;
+    border-radius: 12px;
     cursor: pointer;
     width: 100%;
+    margin-top: 32px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
 }
 
 .auth-button:hover {
-    background: #1a43b8;
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+    box-shadow: 0 15px 25px rgba(99, 102, 241, 0.5);
 }
 
-/* ===== Responsive ===== */
-
-@media (max-width: 768px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .form-group.full {
-        grid-column: span 1;
-    }
-}
-
-/* ===== Step Indicator ===== */
+/* Step Bar Indicator (Darker, transparent look) */
 .step-bar {
-    display: flex;
-    gap: 12px;
-    background: #f1f5f9;
-    border-radius: 8px;
-    padding: 6px;
-    margin-bottom: 28px;
-}
-
-.step {
-    flex: 1;
-    text-align: center;
-    padding: 10px 0;
-    font-size: 13px;
-    font-weight: 600;
-    color: #6b7280;
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .step.active {
-    background: #ffffff;
-    color: #1f4fd8;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    background: #6366f1;
+    color: white;
 }
 
-/* ===== Section Card ===== */
-.section-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 24px;
-    margin-top: 24px;
+.auth-footer-text {
+    text-align: center;
+    color: #94a3b8;
+    margin-top: 20px;
 }
 
-/* ===== Upload Boxes ===== */
-.upload-grid {
+.auth-footer-text a {
+    color: #818cf8;
+    text-decoration: none;
+}
+
+/* Ensure the grid doesn't collapse */
+.form-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    /* Two equal columns */
+    gap: 20px 30px;
+    /* Vertical and Horizontal spacing */
+    width: 100%;
+    margin-top: 20px;
 }
 
-.upload-box {
-    border: 2px dashed #c7d2fe;
-    border-radius: 10px;
-    padding: 24px;
-    text-align: center;
-    background: #f8fbff;
-    cursor: pointer;
-}
-
-.upload-box span {
-    display: block;
-    font-size: 13px;
-    color: #1f4fd8;
-    font-weight: 600;
-    margin-top: 6px;
-}
-
-.upload-box small {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-/* ===== Bottom Buttons ===== */
-.action-row {
+/* Force label above input */
+.form-group {
     display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    margin-top: 32px;
+    flex-direction: column;
+    align-items: flex-start;
+    /* Keeps labels aligned to the left */
+    width: 100%;
 }
 
-.secondary-button {
-    background: #e5e7eb;
-    color: #111827;
-    padding: 12px 18px;
-    border-radius: 8px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
+.form-group label {
+    margin-bottom: 8px;
+    color: #a5b4fc;
+    /* Light purple to stand out */
+    font-size: 14px;
 }
 
-.secondary-button:hover {
-    background: #d1d5db;
+/* Ensure inputs take up the full grid cell */
+.form-group input,
+.form-group select {
+    width: 100%;
+    box-sizing: border-box;
+    /* Crucial for padding/width calculation */
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .upload-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.step {
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.step.active {
-    transform: translateY(-1px);
+/* Handle the 'Register As' taking full width if needed */
+.form-group.full {
+    grid-column: span 2;
 }

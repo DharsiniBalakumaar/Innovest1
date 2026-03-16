@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import "../styles/login.css";
 
@@ -78,6 +78,13 @@ export default function Login() {
             Login
           </button>
         </form>
+        {/* 🔗 NEW LINKS ADDED HERE */}
+        <div className="login-footer">
+          {/*<Link to="/forgot-password" title="Recover Account">Forgot Password?</Link>*/}
+          <span>
+            Don't have an account? <Link to="/register" title="Join Innovest">Register here</Link>
+          </span>
+        </div>
       </div>
     </div>
   );

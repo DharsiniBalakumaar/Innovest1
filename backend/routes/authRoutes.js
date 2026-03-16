@@ -3,9 +3,10 @@ const multer = require("multer");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const client = require('../config/otpConfig');
 
 const router = express.Router();
-
+let otpStore = {};
 /* ---------- MULTER CONFIG ---------- */
 const storage = multer.diskStorage({
   // Ensure this folder exists in your backend root
@@ -104,6 +105,56 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+});
+// 1. SEND OTP (Finds phone by email)
+router.post('/forgot-password-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) return res.status(404).json({ message: "User not found" });
+        if (!user.phone) return res.status(400).json({ message: "No phone number linked" });
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store OTP against EMAIL to keep it consistent with the frontend
+        otpStore[email] = { otp, expires: Date.now() + 300000 };
+
+        const formattedPhone = user.phone.startsWith('+') ? user.phone : `+91${user.phone}`;
+
+        await client.messages.create({
+            body: `Your Innovest reset code is ${otp}.`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: formattedPhone
+        });
+
+        res.json({ message: `OTP sent to number ending in ${user.phone.slice(-4)}` });
+    } catch (err) {
+        res.status(500).json({ message: "SMS Error", error: err.message });
+    }
+});
+
+// 2. VERIFY OTP & UPDATE DB
+router.post('/reset-password-otp', async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        const entry = otpStore[email];
+
+        if (!entry || entry.otp !== otp || entry.expires < Date.now()) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
+        }
+
+        // Hash the new password before saving!
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        await User.findOneAndUpdate({ email }, { password: hashedPassword });
+
+        delete otpStore[email]; // Clear OTP after success
+        res.json({ message: "Password updated successfully!" });
+    } catch (err) {
+        res.status(500).json({ message: "Database Error", error: err.message });
+    }
 });
 
 module.exports = router;

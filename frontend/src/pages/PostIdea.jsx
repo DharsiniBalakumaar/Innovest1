@@ -1,650 +1,423 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-// ── Animated number hook ──
-function useAnimatedValue(target, duration = 1200) {
+/* ── inject fonts ── */
+if (typeof document !== "undefined") {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap";
+  document.head.appendChild(link);
+}
+
+const C = {
+  bg:       "#0d1117",
+  surface:  "#161b22",
+  surface2: "#1c2128",
+  border:   "rgba(48,54,61,0.9)",
+  accent:   "#58a6ff",
+  green:    "#3fb950",
+  red:      "#f85149",
+  yellow:   "#d29922",
+  purple:   "#bc8cff",
+  orange:   "#f0883e",
+  text:     "#e6edf3",
+  muted:    "#7d8590",
+  dim:      "#484f58",
+};
+
+const DOMAINS  = ["AI", "Fintech", "Edtech", "Healthcare", "SaaS", "E-commerce", "Logistics", "AgriTech", "CleanTech", "Other"];
+const STAGES   = [
+  { value:"Idea",      label:"💡 Idea",         desc:"Concept only, no product yet"   },
+  { value:"Prototype", label:"🔧 Prototype",    desc:"Early working version"           },
+  { value:"MVP",       label:"⚡ MVP",           desc:"Minimum viable product live"    },
+  { value:"Live",      label:"🚀 Live Product",  desc:"Revenue-generating product"     },
+];
+
+const FIELDS = [
+  { name:"title",    label:"Idea Title",        type:"input",    placeholder:"e.g. AI-based Credit Scoring for Rural India",           hint:"Make it specific and memorable",                          required:true,  full:true  },
+  { name:"problem",  label:"Problem Statement", type:"textarea", placeholder:"What problem are you solving? Who faces it? How often? What is the pain today?", hint:"More detail = better AI score. Aim for 100+ characters.", required:false, full:true, rows:5 },
+  { name:"solution", label:"Your Solution",     type:"textarea", placeholder:"How does your idea solve it? What makes it different from existing solutions?",   hint:"Describe your approach, tech, or method clearly.",        required:false, full:true, rows:5 },
+  { name:"market",   label:"Target Market",     type:"textarea", placeholder:"e.g. SMEs in India, college students, rural users, B2B SaaS clients...",         hint:"Who are your first customers?",                          required:false, full:false, rows:3 },
+  { name:"revenue",  label:"Revenue Model",     type:"textarea", placeholder:"e.g. Subscription ₹499/month, 2% commission per transaction, freemium...",       hint:"How does the business make money?",                       required:false, full:false, rows:3 },
+];
+
+/* ── Animated number ── */
+function useAnimatedValue(target, duration=1200) {
   const [value, setValue] = useState(0);
   useEffect(() => {
     let start = null;
     const num = parseFloat(target) || 0;
     const step = (ts) => {
       if (!start) start = ts;
-      const progress = Math.min((ts - start) / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(ease * num));
-      if (progress < 1) requestAnimationFrame(step);
+      const p = Math.min((ts - start) / duration, 1);
+      setValue(Math.round((1 - Math.pow(1-p, 3)) * num));
+      if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
-  }, [target, duration]);
+  }, [target]);
   return value;
 }
 
-// ── Donut Gauge ──
-function DonutGauge({ value }) {
+/* ── Similarity score ring ── */
+function ScoreRing({ value }) {
   const animated = useAnimatedValue(value);
-  const r = 54;
-  const circ = 2 * Math.PI * r;
+  const r = 48, circ = 2 * Math.PI * r;
   const filled = (animated / 100) * circ;
-  const color = animated >= 80 ? "#ef4444" : animated >= 65 ? "#f97316" : "#22c55e";
-
+  const color = animated >= 80 ? C.red : animated >= 65 ? C.orange : C.green;
   return (
-    <div style={{ position: "relative", width: "140px", height: "140px", flexShrink: 0 }}>
-      <svg width="140" height="140" viewBox="0 0 140 140">
-        <circle cx="70" cy="70" r={r} fill="none" stroke="#f3f4f6" strokeWidth="14" />
-        <circle
-          cx="70" cy="70" r={r}
-          fill="none" stroke={color} strokeWidth="14"
-          strokeDasharray={`${filled} ${circ - filled}`}
-          strokeDashoffset={circ * 0.25}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dasharray 1.2s cubic-bezier(0.16,1,0.3,1)" }}
+    <div style={{ position:"relative", width:"120px", height:"120px", flexShrink:0 }}>
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r={r} fill="none" stroke={C.surface} strokeWidth="10"/>
+        <circle cx="60" cy="60" r={r} fill="none" stroke={color} strokeWidth="10"
+          strokeDasharray={`${filled} ${circ-filled}`}
+          strokeDashoffset={circ*0.25} strokeLinecap="round"
+          style={{ transition:"stroke-dasharray 1.2s cubic-bezier(0.16,1,0.3,1)" }}
         />
       </svg>
-      <div style={{
-        position: "absolute", inset: 0,
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-      }}>
-        <span style={{ fontSize: "26px", fontWeight: "900", color, lineHeight: 1 }}>
-          {animated}%
-        </span>
-        <span style={{ fontSize: "10px", color: "#9ca3af", fontWeight: "700", marginTop: "4px", letterSpacing: "0.6px", textTransform: "uppercase" }}>
-          Similar
-        </span>
+      <div style={{ position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center" }}>
+        <span style={{ fontSize:"22px",fontWeight:"700",color,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1 }}>{animated}%</span>
+        <span style={{ fontSize:"9px",color:C.muted,marginTop:"3px",textTransform:"uppercase",letterSpacing:"0.06em" }}>Similar</span>
       </div>
     </div>
   );
 }
 
-// ── Animated Bar ──
-function ScoreBar({ label, score, delay = 0 }) {
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const t = setTimeout(() => setWidth(score), delay + 300);
-    return () => clearTimeout(t);
-  }, [score, delay]);
-
-  const color = score >= 80 ? "#ef4444" : score >= 65 ? "#f97316" : "#22c55e";
-
+/* ── Progress bar ── */
+function SimBar({ label, score, delay=0 }) {
+  const [w, setW] = useState(0);
+  useEffect(() => { const t = setTimeout(()=>setW(score), delay+200); return ()=>clearTimeout(t); }, [score, delay]);
+  const color = score >= 80 ? C.red : score >= 65 ? C.orange : C.green;
   return (
-    <div style={{ marginBottom: "12px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-        <span style={{ fontSize: "13px", fontWeight: "700", color: "#374151" }}>{label}</span>
-        <span style={{
-          fontSize: "12px", fontWeight: "800", color,
-          background: `${color}18`, padding: "2px 10px", borderRadius: "20px",
-        }}>{score}%</span>
+    <div style={{ marginBottom:"10px" }}>
+      <div style={{ display:"flex",justifyContent:"space-between",marginBottom:"4px" }}>
+        <span style={{ fontSize:"11px",color:C.text,fontWeight:"600" }}>{label}</span>
+        <span style={{ fontSize:"10px",fontWeight:"700",color,fontFamily:"'IBM Plex Mono',monospace",background:`${color}18`,padding:"1px 8px",borderRadius:"3px" }}>{score}%</span>
       </div>
-      <div style={{ height: "9px", background: "#f3f4f6", borderRadius: "999px", overflow: "hidden" }}>
-        <div style={{
-          height: "100%",
-          width: `${width}%`,
-          background: `linear-gradient(90deg, ${color}99, ${color})`,
-          borderRadius: "999px",
-          transition: "width 0.9s cubic-bezier(0.16,1,0.3,1)",
-        }} />
+      <div style={{ height:"5px",background:C.surface,borderRadius:"3px",overflow:"hidden" }}>
+        <div style={{ height:"100%",width:`${w}%`,background:color,borderRadius:"3px",transition:"width .9s cubic-bezier(0.16,1,0.3,1)" }}/>
       </div>
     </div>
   );
 }
 
-// ── Radar Chart ──
-function RadarChart({ data }) {
-  const cx = 110, cy = 110, r = 80;
-  const n = data.length;
-  const angleStep = (2 * Math.PI) / n;
-
-  const getPoint = (i, val) => {
-    const angle = i * angleStep - Math.PI / 2;
-    const dist = (val / 100) * r;
-    return { x: cx + dist * Math.cos(angle), y: cy + dist * Math.sin(angle) };
-  };
-
-  const getLabelPoint = (i) => {
-    const angle = i * angleStep - Math.PI / 2;
-    return { x: cx + (r + 24) * Math.cos(angle), y: cy + (r + 24) * Math.sin(angle) };
-  };
-
-  const outerPoints = data.map((_, i) => getPoint(i, 100));
-  const dataPoints = data.map((d, i) => getPoint(i, d.score));
-  const dataPath = dataPoints.map((p) => `${p.x},${p.y}`).join(" ");
-
-  return (
-    <svg width="220" height="220" viewBox="0 0 220 220">
-      {[25, 50, 75, 100].map((lvl) => (
-        <polygon
-          key={lvl}
-          points={data.map((_, i) => { const p = getPoint(i, lvl); return `${p.x},${p.y}`; }).join(" ")}
-          fill="none" stroke="#e5e7eb" strokeWidth="1"
-        />
-      ))}
-      {outerPoints.map((p, i) => (
-        <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#e5e7eb" strokeWidth="1" />
-      ))}
-      <polygon points={dataPath} fill="rgba(239,68,68,0.12)" stroke="#ef4444" strokeWidth="2" strokeLinejoin="round" />
-      {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="5"
-          fill={data[i].score >= 80 ? "#ef4444" : data[i].score >= 65 ? "#f97316" : "#22c55e"}
-          stroke="#fff" strokeWidth="2"
-        />
-      ))}
-      {data.map((d, i) => {
-        const lp = getLabelPoint(i);
-        return (
-          <text key={i} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle"
-            fontSize="10" fontWeight="700" fill="#374151">
-            {d.section.split(" ")[0]}
-          </text>
-        );
-      })}
-    </svg>
-  );
-}
-
-// ── Collapsible Section Card ──
-function SectionCard({ reason, index }) {
+/* ── Collapsible reason card ── */
+function ReasonCard({ reason, index }) {
   const [open, setOpen] = useState(false);
-  const icons = ["🧩", "💡", "🔤", "🎯", "📊"];
-  const color = reason.score >= 80 ? "#ef4444" : reason.score >= 65 ? "#f97316" : "#22c55e";
-
+  const icons = ["🧩","💡","🔤","🎯","📊"];
+  const color = reason.score >= 80 ? C.red : reason.score >= 65 ? C.orange : C.green;
   return (
-    <div style={{
-      border: "1.5px solid #e5e7eb", borderRadius: "12px",
-      overflow: "hidden", marginBottom: "10px",
-    }}>
-      <button onClick={() => setOpen(!open)} style={{
-        width: "100%", background: open ? "#f9fafb" : "#fff",
-        border: "none", padding: "14px 16px", cursor: "pointer",
-        display: "flex", alignItems: "center", gap: "10px", textAlign: "left",
-      }}>
-        <span style={{ fontSize: "18px" }}>{icons[index] || "📌"}</span>
-        <span style={{ flex: 1, fontWeight: "700", fontSize: "14px", color: "#1f2937" }}>
-          {reason.section}
-        </span>
-        <span style={{
-          background: color, color: "#fff", fontSize: "12px",
-          fontWeight: "800", padding: "3px 12px", borderRadius: "20px",
-        }}>{reason.score}%</span>
-        <span style={{ color: "#9ca3af", fontSize: "11px", marginLeft: "4px" }}>{open ? "▲" : "▼"}</span>
+    <div style={{ border:`1px solid ${C.border}`,borderRadius:"7px",overflow:"hidden",marginBottom:"8px" }}>
+      <button onClick={()=>setOpen(!open)} style={{ width:"100%",background:open?C.surface2:C.surface,border:"none",padding:"11px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:"10px",textAlign:"left",fontFamily:"'IBM Plex Sans',sans-serif" }}>
+        <span style={{ fontSize:"15px" }}>{icons[index]||"📌"}</span>
+        <span style={{ flex:1,fontWeight:"600",fontSize:"12px",color:C.text }}>{reason.section}</span>
+        <span style={{ background:color,color:"#0d1117",fontSize:"10px",fontWeight:"700",padding:"2px 10px",borderRadius:"3px" }}>{reason.score}%</span>
+        <span style={{ color:C.dim,fontSize:"10px",marginLeft:"4px" }}>{open?"▲":"▼"}</span>
       </button>
       {open && (
-        <div style={{ padding: "0 16px 14px", background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-          <div style={{ margin: "12px 0 10px", height: "7px", background: "#e5e7eb", borderRadius: "999px", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${reason.score}%`, background: color, borderRadius: "999px" }} />
+        <div style={{ padding:"10px 14px 13px",background:C.surface2,borderTop:`1px solid ${C.border}` }}>
+          <div style={{ margin:"8px 0",height:"4px",background:C.surface,borderRadius:"3px",overflow:"hidden" }}>
+            <div style={{ height:"100%",width:`${reason.score}%`,background:color,borderRadius:"3px" }}/>
           </div>
-          <p style={{ fontSize: "14px", color: "#4b5563", lineHeight: "1.7", margin: 0 }}>
-            {reason.reason}
-          </p>
+          <p style={{ fontSize:"12px",color:C.muted,lineHeight:"1.7",margin:0 }}>{reason.reason}</p>
         </div>
       )}
     </div>
   );
 }
 
+/* ══════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════ */
 export default function PostIdea() {
-  const [form, setForm] = useState({
-    title: "",
-    domain: "",
-    problem: "",
-    solution: "",
-    market: "",
-    revenue: "",
-    stage: "",
-  });
-
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ title:"", domain:"", problem:"", solution:"", market:"", revenue:"", stage:"" });
   const [loading, setLoading] = useState(false);
   const [similarityData, setSimilarityData] = useState(null);
+  const [focusedField, setFocusedField] = useState(null);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const completedFields = Object.entries(form).filter(([k,v]) => v.trim().length > 0).length;
+  const totalFields = Object.keys(form).length;
+  const completionPct = Math.round((completedFields / totalFields) * 100);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!form.domain || !form.title) {
-      alert("Please fill required fields");
-      return;
-    }
-
+    if (!form.domain || !form.title) { alert("Please fill required fields"); return; }
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        "http://localhost:5000/api/innovator/upload-idea",
-        form,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      await axios.post("http://localhost:5000/api/innovator/upload-idea", form, { headers: { Authorization:`Bearer ${token}` } });
       alert("Idea submitted successfully 🚀");
-      setForm({
-        title: "",
-        domain: "",
-        problem: "",
-        solution: "",
-        market: "",
-        revenue: "",
-        stage: "",
-      });
+      setForm({ title:"", domain:"", problem:"", solution:"", market:"", revenue:"", stage:"" });
     } catch (err) {
-      console.log("ERROR RESPONSE:", err.response?.data);
       if (err.response?.data?.duplicate) {
-        // Fix: handle both snake_case and camelCase from backend, and 0–1 or 0–100 range
-        const rawSim =
-          err.response.data.similarity ??
-          err.response.data.confidence_score ??
-          0;
-        const simValue = rawSim <= 1
-          ? (rawSim * 100).toFixed(1)
-          : parseFloat(rawSim).toFixed(1);
-
+        const rawSim = err.response.data.similarity ?? err.response.data.confidence_score ?? 0;
         setSimilarityData({
-          existingTitle:
-            err.response.data.existingTitle ||
-            err.response.data.existing_title ||
-            "Unknown",
-          similarity: simValue,
+          existingTitle: err.response.data.existingTitle || err.response.data.existing_title || "Unknown",
+          similarity: rawSim <= 1 ? (rawSim*100).toFixed(1) : parseFloat(rawSim).toFixed(1),
           reasons: err.response.data.reasons || [],
         });
-      } else if (err.response?.data?.message) {
-        alert(err.response.data.message);
       } else {
-        alert("Idea cannot be uploaded");
+        alert(err.response?.data?.message || "Idea cannot be uploaded");
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const score = parseFloat(similarityData?.similarity) || 0;
-  const verdictColor = score >= 80 ? "#ef4444" : score >= 65 ? "#f97316" : "#22c55e";
-  const verdictBg = score >= 80 ? "#fef2f2" : score >= 65 ? "#fff7ed" : "#f0fdf4";
-  const verdictBorder = score >= 80 ? "#fecaca" : score >= 65 ? "#fed7aa" : "#bbf7d0";
-  const verdictText = score >= 80
-    ? "🚫 Direct Duplicate — Not Acceptable"
-    : score >= 65
-    ? "⚠️ Too Similar — Needs Major Differentiation"
-    : "✅ Borderline — Minor Adjustments Needed";
+  const verdictColor = score>=80?C.red:score>=65?C.orange:C.green;
+  const verdictText  = score>=80?"🚫 Direct Duplicate — Not Acceptable":score>=65?"⚠️ Too Similar — Needs Major Differentiation":"✅ Borderline — Minor Adjustments Needed";
+
+  const inputStyle = (name) => ({
+    width:"100%", padding:"10px 14px",
+    background: focusedField===name ? C.surface2 : C.surface,
+    border:`1px solid ${focusedField===name ? C.accent : C.border}`,
+    borderRadius:"6px", fontSize:"12px", color:C.text,
+    outline:"none", transition:"border-color .15s, background .15s",
+    fontFamily:"'IBM Plex Sans',sans-serif", resize:"vertical",
+    boxSizing:"border-box",
+  });
 
   return (
-    <>
-      <div style={styles.page}>
+    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:"'IBM Plex Sans',sans-serif", color:C.text }}>
+      <div style={{ maxWidth:"1000px", margin:"0 auto", padding:"20px 24px" }}>
 
-        {/* ── HERO BANNER ── */}
-        <div style={styles.hero}>
+        {/* ── Header ── */}
+        <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px 20px", marginBottom:"16px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"12px" }}>
           <div>
-            <h1 style={styles.heroTitle}>🚀 Post Your Idea</h1>
-            <p style={styles.heroSub}>
-              Share your innovation and let investors discover its potential.
-              Fill in as much detail as possible for the best AI analysis.
-            </p>
+            <div style={{ fontSize:"15px", fontWeight:"700", color:C.text }}>🚀 Post a New Idea</div>
+            <div style={{ fontSize:"10px", color:C.muted, marginTop:"2px" }}>Fill in your details — the more you add, the better your AI score</div>
+          </div>
+          {/* Completion meter */}
+          <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+            <div style={{ fontSize:"10px", color:C.muted }}>Form completion</div>
+            <div style={{ width:"120px", height:"5px", background:C.surface2, borderRadius:"3px", overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${completionPct}%`, background:completionPct===100?C.green:C.accent, borderRadius:"3px", transition:"width .4s ease" }}/>
+            </div>
+            <span style={{ fontSize:"10px", fontWeight:"700", color:completionPct===100?C.green:C.accent, fontFamily:"'IBM Plex Mono',monospace" }}>{completionPct}%</span>
           </div>
         </div>
 
-        {/* ── FORM CARD ── */}
-        <div style={styles.card}>
-          <form onSubmit={handleSubmit} style={styles.form}>
+        <form onSubmit={handleSubmit}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"12px" }}>
 
-            <div style={styles.row}>
-              <div style={styles.fieldFull}>
-                <label style={styles.label}>
-                  Idea Title <span style={styles.required}>*</span>
-                </label>
-                <input
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  placeholder="Eg: AI-based Credit Scoring Platform"
-                  style={styles.input}
-                  required
-                />
-                <span style={styles.hint}>Keep it clear and descriptive</span>
-              </div>
-            </div>
-
-            <div style={styles.row}>
-              <div style={styles.fieldHalf}>
-                <label style={styles.label}>
-                  Domain <span style={styles.required}>*</span>
-                </label>
-                <select name="domain" value={form.domain} onChange={handleChange} style={styles.input} required>
-                  <option value="">Select Domain</option>
-                  <option value="AI">AI</option>
-                  <option value="Fintech">Fintech</option>
-                  <option value="Edtech">Edtech</option>
-                  <option value="Healthcare">Healthcare</option>
-                </select>
-              </div>
-
-              <div style={styles.fieldHalf}>
-                <label style={styles.label}>Current Stage</label>
-                <select name="stage" value={form.stage} onChange={handleChange} style={styles.input}>
-                  <option value="">Select Stage</option>
-                  <option value="Idea">💡 Idea</option>
-                  <option value="Prototype">🔧 Prototype</option>
-                  <option value="MVP">⚡ MVP</option>
-                  <option value="Live">🚀 Live Product</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={styles.fieldFull}>
-              <label style={styles.label}>Problem Statement</label>
-              <textarea
-                name="problem" value={form.problem} onChange={handleChange}
-                placeholder="Describe the problem you are solving in detail. Who faces this problem? How often? What is the current pain point? The more detail you provide, the better the AI analysis will be."
-                style={styles.textareaLarge}
+            {/* ── Title (full width) ── */}
+            <div style={{ gridColumn:"1/-1", background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
+              <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:"8px" }}>
+                Idea Title <span style={{ color:C.red }}>*</span>
+              </label>
+              <input
+                name="title" value={form.title} onChange={handleChange} required
+                placeholder="e.g. AI-based Credit Scoring for Rural India"
+                onFocus={()=>setFocusedField("title")} onBlur={()=>setFocusedField(null)}
+                style={inputStyle("title")}
               />
-              <div style={styles.charHint}>
-                {form.problem.length} characters
-                {form.problem.length < 100 && form.problem.length > 0 && (
-                  <span style={{ color: "#e67300", marginLeft: "8px" }}>
-                    — Try to write at least 100 characters for better AI scoring
+              <div style={{ fontSize:"9px", color:C.dim, marginTop:"5px" }}>Make it specific and memorable</div>
+            </div>
+
+            {/* ── Domain ── */}
+            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
+              <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:"8px" }}>
+                Domain <span style={{ color:C.red }}>*</span>
+              </label>
+              <select name="domain" value={form.domain} onChange={handleChange} required
+                onFocus={()=>setFocusedField("domain")} onBlur={()=>setFocusedField(null)}
+                style={{ ...inputStyle("domain"), cursor:"pointer" }}>
+                <option value="">Select a domain</option>
+                {DOMAINS.map(d=><option key={d} value={d}>{d}</option>)}
+              </select>
+              <div style={{ fontSize:"9px", color:C.dim, marginTop:"5px" }}>Which sector does your idea belong to?</div>
+            </div>
+
+            {/* ── Stage ── */}
+            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
+              <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:"8px" }}>Current Stage</label>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px" }}>
+                {STAGES.map(s=>(
+                  <button key={s.value} type="button" onClick={()=>setForm({...form,stage:s.value})} style={{
+                    padding:"8px 10px", borderRadius:"6px", cursor:"pointer", textAlign:"left",
+                    border:`1px solid ${form.stage===s.value?C.accent:C.border}`,
+                    background: form.stage===s.value?`rgba(88,166,255,.1)`:C.surface2,
+                    transition:"all .15s", fontFamily:"'IBM Plex Sans',sans-serif",
+                  }}>
+                    <div style={{ fontSize:"11px", fontWeight:"600", color:form.stage===s.value?C.accent:C.text }}>{s.label}</div>
+                    <div style={{ fontSize:"9px", color:C.muted, marginTop:"1px" }}>{s.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Problem (full width) ── */}
+            <div style={{ gridColumn:"1/-1", background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px" }}>
+                <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em" }}>Problem Statement</label>
+                <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+                  <span style={{ fontSize:"9px", color: form.problem.length>=100?C.green:form.problem.length>0?C.orange:C.dim, fontFamily:"'IBM Plex Mono',monospace" }}>
+                    {form.problem.length} chars
                   </span>
-                )}
-              </div>
-            </div>
-
-            <div style={styles.fieldFull}>
-              <label style={styles.label}>Proposed Solution</label>
-              <textarea
-                name="solution" value={form.solution} onChange={handleChange}
-                placeholder="How does your idea solve the problem? Explain your approach, technology, or method. What makes your solution different from what already exists in the market?"
-                style={styles.textareaLarge}
-              />
-              <div style={styles.charHint}>
-                {form.solution.length} characters
-                {form.solution.length < 100 && form.solution.length > 0 && (
-                  <span style={{ color: "#e67300", marginLeft: "8px" }}>
-                    — Try to write at least 100 characters for better AI scoring
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div style={styles.row}>
-              <div style={styles.fieldHalf}>
-                <label style={styles.label}>Target Market</label>
-                <textarea
-                  name="market" value={form.market} onChange={handleChange}
-                  placeholder="Eg: SMEs in India, College students, Rural users, B2B SaaS clients..."
-                  style={styles.textareaMedium}
-                />
-              </div>
-              <div style={styles.fieldHalf}>
-                <label style={styles.label}>Revenue Model</label>
-                <textarea
-                  name="revenue" value={form.revenue} onChange={handleChange}
-                  placeholder="Eg: Subscription ₹499/month, Commission 2% per transaction, Freemium with paid upgrades..."
-                  style={styles.textareaMedium}
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ ...styles.button, opacity: loading ? 0.75 : 1 }}
-            >
-              {loading ? (
-                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                  <span style={styles.btnSpinner} /> Submitting...
-                </span>
-              ) : (
-                "🚀 Submit Idea"
-              )}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* ── ENHANCED SIMILARITY MODAL ── */}
-      {similarityData && (
-        <div style={modal.overlay} onClick={() => setSimilarityData(null)}>
-          <div style={modal.box} onClick={(e) => e.stopPropagation()}>
-
-            {/* Header */}
-            <div style={modal.header}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <span style={{ fontSize: "26px" }}>⚠️</span>
-                <div>
-                  <h3 style={modal.title}>Similar Idea Detected</h3>
-                  <p style={modal.subtitle}>AI-powered similarity analysis</p>
+                  {form.problem.length>=100 && <span style={{ fontSize:"9px", color:C.green }}>✓ Good length</span>}
+                  {form.problem.length>0 && form.problem.length<100 && <span style={{ fontSize:"9px", color:C.orange }}>Aim for 100+</span>}
                 </div>
               </div>
-              <button onClick={() => setSimilarityData(null)} style={modal.closeBtn}>✕</button>
+              <textarea
+                name="problem" value={form.problem} onChange={handleChange} rows={5}
+                placeholder="What problem are you solving? Who faces it and how often? What does the current situation look like without your solution? The more specific you are, the better your AI analysis score will be."
+                onFocus={()=>setFocusedField("problem")} onBlur={()=>setFocusedField(null)}
+                style={inputStyle("problem")}
+              />
+              <div style={{ fontSize:"9px", color:C.dim, marginTop:"5px" }}>💡 Tip: Describe the pain point clearly. Investors want to see that you understand the problem deeply.</div>
             </div>
 
-            <div style={{ padding: "20px 24px 24px" }}>
+            {/* ── Solution (full width) ── */}
+            <div style={{ gridColumn:"1/-1", background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px" }}>
+                <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em" }}>Your Solution</label>
+                <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+                  <span style={{ fontSize:"9px", color:form.solution.length>=100?C.green:form.solution.length>0?C.orange:C.dim, fontFamily:"'IBM Plex Mono',monospace" }}>
+                    {form.solution.length} chars
+                  </span>
+                  {form.solution.length>=100 && <span style={{ fontSize:"9px", color:C.green }}>✓ Good length</span>}
+                  {form.solution.length>0 && form.solution.length<100 && <span style={{ fontSize:"9px", color:C.orange }}>Aim for 100+</span>}
+                </div>
+              </div>
+              <textarea
+                name="solution" value={form.solution} onChange={handleChange} rows={5}
+                placeholder="How does your idea solve the problem? What is your approach, technology, or unique method? What makes your solution different from what already exists in the market?"
+                onFocus={()=>setFocusedField("solution")} onBlur={()=>setFocusedField(null)}
+                style={inputStyle("solution")}
+              />
+              <div style={{ fontSize:"9px", color:C.dim, marginTop:"5px" }}>💡 Tip: Highlight what makes your solution unique. Investors look for differentiation.</div>
+            </div>
+
+            {/* ── Market ── */}
+            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
+              <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:"8px" }}>Target Market</label>
+              <textarea
+                name="market" value={form.market} onChange={handleChange} rows={4}
+                placeholder="e.g. SMEs in India, college students aged 18–25, rural farmers in Tamil Nadu, B2B SaaS clients in manufacturing..."
+                onFocus={()=>setFocusedField("market")} onBlur={()=>setFocusedField(null)}
+                style={inputStyle("market")}
+              />
+              <div style={{ fontSize:"9px", color:C.dim, marginTop:"5px" }}>Who are your first 100 customers?</div>
+            </div>
+
+            {/* ── Revenue ── */}
+            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
+              <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:"8px" }}>Revenue Model</label>
+              <textarea
+                name="revenue" value={form.revenue} onChange={handleChange} rows={4}
+                placeholder="e.g. Subscription ₹499/month, 2% commission per transaction, freemium with paid upgrades at ₹999, B2B SaaS annual contract..."
+                onFocus={()=>setFocusedField("revenue")} onBlur={()=>setFocusedField(null)}
+                style={inputStyle("revenue")}
+              />
+              <div style={{ fontSize:"9px", color:C.dim, marginTop:"5px" }}>How does this business make money?</div>
+            </div>
+
+          </div>
+
+          {/* ── AI Score tip banner ── */}
+          <div style={{ background:`rgba(88,166,255,.06)`, border:`1px solid rgba(88,166,255,.2)`, borderRadius:"7px", padding:"12px 16px", marginBottom:"14px", display:"flex", gap:"10px", alignItems:"flex-start" }}>
+            <span style={{ fontSize:"16px", flexShrink:0 }}>🤖</span>
+            <div>
+              <div style={{ fontSize:"11px", fontWeight:"700", color:C.accent, marginBottom:"3px" }}>What improves your AI score</div>
+              <div style={{ fontSize:"10px", color:C.muted, lineHeight:"1.7" }}>
+                Problem & solution 100+ chars · Clear revenue model · Specific target market · Stage set to Prototype or higher
+              </div>
+            </div>
+          </div>
+
+          {/* ── Submit ── */}
+          <button type="submit" disabled={loading} style={{
+            width:"100%", padding:"14px",
+            background: loading ? C.surface2 : C.accent,
+            color: loading ? C.muted : "#0d1117",
+            border:"none", borderRadius:"7px",
+            fontWeight:"700", fontSize:"13px", cursor: loading ? "not-allowed" : "pointer",
+            fontFamily:"'IBM Plex Sans',sans-serif", transition:"background .15s",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:"8px",
+          }}>
+            {loading ? (
+              <>
+                <div style={{ width:"14px",height:"14px",border:`2px solid ${C.dim}`,borderTopColor:C.accent,borderRadius:"50%",animation:"spin .8s linear infinite" }}/>
+                Submitting...
+              </>
+            ) : "🚀 Submit Idea for AI Analysis"}
+          </button>
+        </form>
+      </div>
+
+      {/* ══════════ SIMILARITY MODAL ══════════ */}
+      {similarityData && (
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem" }}
+          onClick={()=>setSimilarityData(null)}>
+          <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:"10px",width:"100%",maxWidth:"580px",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(0,0,0,0.5)" }}
+            onClick={e=>e.stopPropagation()}>
+
+            {/* Modal header */}
+            <div style={{ background:C.surface2,borderBottom:`1px solid ${C.border}`,padding:"14px 18px",borderRadius:"10px 10px 0 0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+              <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+                <span style={{ fontSize:"20px" }}>⚠️</span>
+                <div>
+                  <div style={{ fontSize:"13px",fontWeight:"700",color:C.text }}>Similar Idea Detected</div>
+                  <div style={{ fontSize:"9px",color:C.muted,marginTop:"1px" }}>AI-powered similarity analysis</div>
+                </div>
+              </div>
+              <button onClick={()=>setSimilarityData(null)} style={{ background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,color:C.muted,width:"26px",height:"26px",borderRadius:"50%",cursor:"pointer",fontSize:"11px",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+            </div>
+
+            <div style={{ padding:"16px 18px 20px" }}>
 
               {/* Matched idea */}
-              <div style={modal.matchedBox}>
-                <p style={modal.matchedLabel}>Matched with existing idea</p>
-                <p style={modal.ideaName}>🔍 {similarityData.existingTitle}</p>
+              <div style={{ background:`rgba(248,81,73,.06)`,border:`1px solid rgba(248,81,73,.2)`,borderRadius:"7px",padding:"10px 14px",marginBottom:"12px" }}>
+                <div style={{ fontSize:"9px",color:C.red,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:"700",marginBottom:"4px" }}>Matched with existing idea</div>
+                <div style={{ fontSize:"12px",fontWeight:"700",color:C.text }}>🔍 {similarityData.existingTitle}</div>
               </div>
 
               {/* Verdict */}
-              <div style={{
-                background: verdictBg,
-                border: `1.5px solid ${verdictBorder}`,
-                color: verdictColor,
-                borderRadius: "10px", padding: "10px 16px",
-                fontSize: "14px", fontWeight: "800",
-                textAlign: "center", marginBottom: "20px",
-              }}>
+              <div style={{ background:`${verdictColor}10`,border:`1px solid ${verdictColor}40`,color:verdictColor,borderRadius:"6px",padding:"8px 14px",fontSize:"12px",fontWeight:"700",textAlign:"center",marginBottom:"14px" }}>
                 {verdictText}
               </div>
 
-              {/* Donut + Bars */}
-              <div style={{
-                display: "flex", gap: "20px", alignItems: "center",
-                background: "#f9fafb", border: "1.5px solid #e5e7eb",
-                borderRadius: "16px", padding: "18px 20px", marginBottom: "20px",
-                flexWrap: "wrap",
-              }}>
-                <DonutGauge value={score} />
-                <div style={{ flex: 1, minWidth: "180px" }}>
-                  <p style={{
-                    margin: "0 0 14px", fontWeight: "700", fontSize: "12px",
-                    color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.6px",
-                  }}>
-                    Component Breakdown
-                  </p>
-                  {similarityData.reasons?.length > 0 ? (
-                    similarityData.reasons.map((r, i) => (
-                      <ScoreBar key={i} label={r.section} score={r.score} delay={i * 150} />
-                    ))
-                  ) : (
-                    <>
-                      <ScoreBar label="Solution" score={Math.round(score * 1.05 > 100 ? 100 : score * 1.05)} delay={0} />
-                      <ScoreBar label="Problem" score={Math.round(score * 0.9)} delay={150} />
-                      <ScoreBar label="Title" score={Math.round(score * 0.85)} delay={300} />
-                    </>
-                  )}
+              {/* Ring + bars */}
+              <div style={{ display:"flex",gap:"16px",alignItems:"center",background:C.surface2,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"14px 16px",marginBottom:"14px",flexWrap:"wrap" }}>
+                <ScoreRing value={score}/>
+                <div style={{ flex:1,minWidth:"160px" }}>
+                  <div style={{ fontSize:"9px",color:C.muted,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"10px" }}>Component Breakdown</div>
+                  {similarityData.reasons?.length>0
+                    ? similarityData.reasons.map((r,i)=><SimBar key={i} label={r.section} score={r.score} delay={i*150}/>)
+                    : <>
+                        <SimBar label="Solution"  score={Math.min(Math.round(score*1.05),100)} delay={0}/>
+                        <SimBar label="Problem"   score={Math.round(score*0.9)}                delay={150}/>
+                        <SimBar label="Title"     score={Math.round(score*0.85)}               delay={300}/>
+                      </>
+                  }
                 </div>
               </div>
 
-              {/* Radar Chart */}
-              {similarityData.reasons?.length >= 3 && (
-                <div style={{
-                  background: "#f9fafb", border: "1.5px solid #e5e7eb",
-                  borderRadius: "16px", padding: "18px 20px",
-                  marginBottom: "20px", textAlign: "center",
-                }}>
-                  <p style={{ margin: "0 0 2px", fontWeight: "800", fontSize: "13px", color: "#374151", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-                    📡 Similarity Radar
-                  </p>
-                  <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#9ca3af" }}>
-                    Multi-dimensional semantic overlap
-                  </p>
-                  <div style={{ display: "flex", justifyContent: "center" }}>
-                    <RadarChart data={similarityData.reasons} />
-                  </div>
-                  <div style={{ display: "flex", gap: "14px", justifyContent: "center", marginTop: "8px", flexWrap: "wrap" }}>
-                    {[{ label: "High ≥80%", color: "#ef4444" }, { label: "Moderate 65–79%", color: "#f97316" }, { label: "Low <65%", color: "#22c55e" }].map((l) => (
-                      <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "#6b7280" }}>
-                        <div style={{ width: "9px", height: "9px", borderRadius: "50%", background: l.color }} />
-                        {l.label}
-                      </div>
-                    ))}
-                  </div>
+              {/* Detailed analysis */}
+              {similarityData.reasons?.length>0 && (
+                <div style={{ marginBottom:"14px" }}>
+                  <div style={{ fontSize:"9px",color:C.muted,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:"10px",fontWeight:"700" }}>🔎 Detailed Analysis</div>
+                  {similarityData.reasons.map((r,i)=><ReasonCard key={i} reason={r} index={i}/>)}
                 </div>
               )}
 
-              {/* Detailed Analysis */}
-              <div style={{ marginBottom: "18px" }}>
-                <p style={{ margin: "0 0 12px", fontWeight: "800", fontSize: "13px", color: "#374151", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-                  🔎 Detailed Analysis
-                </p>
-                {similarityData.reasons?.length > 0 ? (
-                  similarityData.reasons.map((r, i) => (
-                    <SectionCard key={i} reason={r} index={i} />
-                  ))
-                ) : (
-                  <div style={{ background: "#f9fafb", border: "1.5px solid #e5e7eb", borderRadius: "12px", padding: "14px 16px" }}>
-                    <p style={{ fontSize: "14px", color: "#6b7280", margin: 0, lineHeight: "1.7" }}>
-                      High semantic overlap detected across problem definition and proposed solution. The core concepts, technical approach, and target use-case are too similar to be considered a distinct idea.
-                    </p>
-                  </div>
-                )}
-              </div>
-
               {/* Tip */}
-              <div style={modal.tipBox}>
-                <p style={{ margin: "0 0 6px", fontWeight: "800", fontSize: "12px", color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.6px" }}>
-                  💡 How to differentiate your idea
-                </p>
-                <p style={{ fontSize: "14px", color: "#374151", lineHeight: "1.7", margin: 0 }}>
-                  Focus on a <strong>unique target segment</strong>, a novel technical approach, or a geography/use-case the existing idea doesn't cover. Make sure your problem statement is specific enough to stand on its own.
-                </p>
+              <div style={{ background:`rgba(88,166,255,.06)`,border:`1px solid rgba(88,166,255,.2)`,borderRadius:"7px",padding:"12px 14px",marginBottom:"14px" }}>
+                <div style={{ fontSize:"9px",color:C.accent,fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"6px" }}>💡 How to differentiate your idea</div>
+                <div style={{ fontSize:"11px",color:C.muted,lineHeight:"1.7" }}>
+                  Focus on a <span style={{ color:C.text,fontWeight:"600" }}>unique target segment</span>, a novel technical approach, or a geography/use-case the existing idea doesn't cover. Make your problem statement specific enough to stand on its own.
+                </div>
               </div>
 
-              <button onClick={() => setSimilarityData(null)} style={modal.button}>
+              <button onClick={()=>setSimilarityData(null)} style={{ width:"100%",padding:"12px",background:C.surface2,color:C.text,border:`1px solid ${C.border}`,borderRadius:"7px",fontWeight:"700",fontSize:"12px",cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif" }}>
                 Got it — I'll Revise My Idea
               </button>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
-
-/* ── PAGE STYLES ── */
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#f4f6f8",
-    padding: "0 0 3rem 0",
-  },
-  hero: {
-    background: "linear-gradient(135deg, #1a1a2e, #6c5ce7)",
-    color: "#fff",
-    padding: "2.5rem 3rem",
-    marginBottom: "2rem",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  heroTitle: { margin: "0 0 8px", fontSize: "32px", fontWeight: "800", color: "#fff" },
-  heroSub: { margin: 0, fontSize: "16px", opacity: 0.85, maxWidth: "700px", lineHeight: "1.6" },
-  card: {
-    background: "#fff", margin: "0 2rem", borderRadius: "18px",
-    padding: "2.5rem 3rem", boxShadow: "0 8px 32px rgba(0,0,0,0.09)",
-  },
-  form: { display: "flex", flexDirection: "column", gap: "1.8rem" },
-  row: { display: "flex", gap: "2rem", flexWrap: "wrap" },
-  fieldFull: { flex: "1 1 100%", display: "flex", flexDirection: "column", gap: "6px" },
-  fieldHalf: { flex: "1 1 280px", display: "flex", flexDirection: "column", gap: "6px" },
-  label: { fontWeight: "700", fontSize: "15px", color: "#1a1a2e", marginBottom: "2px" },
-  required: { color: "#cc2200", marginLeft: "2px" },
-  hint: { fontSize: "12px", color: "#aaa", marginTop: "4px" },
-  charHint: { fontSize: "12px", color: "#aaa", marginTop: "6px", textAlign: "right" },
-  input: {
-    width: "100%", padding: "14px 16px", borderRadius: "10px",
-    border: "1.5px solid #ddd", fontSize: "15px", color: "#1a1a2e",
-    background: "#fafafa", boxSizing: "border-box", outline: "none",
-    transition: "border-color 0.2s",
-  },
-  textareaLarge: {
-    width: "100%", padding: "16px", borderRadius: "10px",
-    border: "1.5px solid #ddd", fontSize: "15px", color: "#1a1a2e",
-    background: "#fafafa", minHeight: "180px", resize: "vertical",
-    lineHeight: "1.8", boxSizing: "border-box", fontFamily: "inherit",
-  },
-  textareaMedium: {
-    width: "100%", padding: "14px 16px", borderRadius: "10px",
-    border: "1.5px solid #ddd", fontSize: "15px", color: "#1a1a2e",
-    background: "#fafafa", minHeight: "120px", resize: "vertical",
-    lineHeight: "1.8", boxSizing: "border-box", fontFamily: "inherit",
-  },
-  button: {
-    padding: "18px",
-    background: "linear-gradient(135deg, #6c5ce7, #5a4bdc)",
-    color: "#fff", border: "none", borderRadius: "12px",
-    fontWeight: "800", fontSize: "17px", cursor: "pointer",
-    marginTop: "6px", letterSpacing: "0.3px",
-    boxShadow: "0 6px 20px rgba(108,92,231,0.35)",
-    transition: "transform 0.15s, box-shadow 0.15s",
-  },
-  btnSpinner: {
-    display: "inline-block", width: "18px", height: "18px",
-    border: "3px solid rgba(255,255,255,0.4)",
-    borderTop: "3px solid #fff", borderRadius: "50%",
-    animation: "spin 0.8s linear infinite",
-  },
-};
-
-/* ── MODAL STYLES ── */
-const modal = {
-  overlay: {
-    position: "fixed", inset: 0,
-    background: "rgba(0,0,0,0.6)",
-    backdropFilter: "blur(4px)",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    zIndex: 1000, padding: "1rem",
-  },
-  box: {
-    background: "#fff", borderRadius: "20px",
-    width: "100%", maxWidth: "620px",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.28)",
-    maxHeight: "92vh", overflowY: "auto",
-  },
-  header: {
-    background: "linear-gradient(135deg, #1f2937, #374151)",
-    padding: "18px 22px", borderRadius: "20px 20px 0 0",
-    display: "flex", alignItems: "center",
-    justifyContent: "space-between",
-  },
-  title: { color: "#f9fafb", fontSize: "18px", fontWeight: "900", margin: "0 0 3px" },
-  subtitle: { fontSize: "12px", color: "#9ca3af", margin: 0 },
-  closeBtn: {
-    background: "rgba(255,255,255,0.12)", border: "none",
-    color: "#fff", width: "30px", height: "30px",
-    borderRadius: "50%", cursor: "pointer",
-    fontSize: "14px", display: "flex",
-    alignItems: "center", justifyContent: "center",
-  },
-  matchedBox: {
-    background: "#fef2f2", border: "1.5px solid #fecaca",
-    borderRadius: "12px", padding: "12px 16px", marginBottom: "16px",
-  },
-  matchedLabel: {
-    fontSize: "11px", color: "#ef4444", margin: "0 0 5px",
-    textTransform: "uppercase", letterSpacing: "0.6px", fontWeight: "700",
-  },
-  ideaName: { color: "#1f2937", fontWeight: "800", fontSize: "15px", margin: 0 },
-  tipBox: {
-    background: "linear-gradient(135deg, #eff6ff, #f0fdf4)",
-    border: "1.5px solid #bfdbfe",
-    borderRadius: "12px", padding: "14px 16px",
-    marginBottom: "18px",
-  },
-  button: {
-    width: "100%", padding: "16px",
-    background: "linear-gradient(135deg, #1f2937, #374151)",
-    color: "#fff", border: "none", borderRadius: "12px",
-    fontWeight: "800", fontSize: "15px", cursor: "pointer",
-    letterSpacing: "0.3px",
-  },
-};

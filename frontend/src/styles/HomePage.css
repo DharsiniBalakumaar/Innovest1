@@ -1,92 +1,204 @@
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .home {
     min-height: 100vh;
-    background: linear-gradient(135deg, #4f46e5, #9333ea, #ec4899);
-    color: white;
-    font-family: Arial, sans-serif;
+    /* Deep dark theme inspired by your image */
+    background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
+    color: #f8fafc;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
 }
 
 .hero {
     max-width: 1100px;
     margin: auto;
-    padding: 140px 20px;
+    padding: 120px 20px 40px 20px;
     text-align: center;
+    animation: fadeInUp 0.8s ease-out;
 }
 
 .hero h1 {
-    font-size: 3.5rem;
-    margin-bottom: 20px;
+    font-size: 4rem;
+    margin-bottom: 24px;
+    background: linear-gradient(to right, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
 }
 
-.hero p {
-    font-size: 1.2rem;
-    max-width: 750px;
+.subtitle {
+    font-size: 1.25rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    max-width: 800px;
     margin: auto;
-    opacity: 0.95;
 }
 
+/* 1. BUTTON STYLING (Replacing Links) */
 .actions {
     margin-top: 40px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
 }
 
 .actions a {
-    display: inline-block;
-    margin: 10px 15px;
-    padding: 14px 34px;
-    border-radius: 30px;
-    font-size: 1rem;
-    font-weight: bold;
     text-decoration: none;
-    transition: 0.3s;
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
 }
 
 .btn-primary {
-    background: white;
-    color: #4f46e5;
+    background: #6366f1;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary:hover {
-    background: #e0e7ff;
+    background: #4f46e5;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.5);
 }
 
 .btn-secondary {
-    border: 2px solid white;
-    color: white;
+    background: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
 }
 
 .btn-secondary:hover {
-    background: white;
-    color: #4f46e5;
+    background: rgba(255, 255, 255, 0.1);
+    color: white !important;
+    transform: translateY(-3px);
 }
 
+/* 2. IMPROVED TRUST SECTION */
+.trust-section {
+    padding: 60px 20px;
+    background: rgba(99, 102, 241, 0.03);
+    /* Very subtle purple tint background */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.trust-section h2 {
+    text-align: center;
+    font-size: 2.2rem;
+    margin-bottom: 50px;
+    color: white;
+}
+
+.trust-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.trust-item {
+    background: rgba(255, 255, 255, 0.03);
+    /* Glass effect */
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.trust-item:hover {
+    border-color: #818cf8;
+}
+
+.trust-item h4 {
+    color: #a5b4fc;
+    /* Lighter purple for high contrast */
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+}
+
+/* Adds a small decorative bullet before the trust titles */
+.trust-item h4::before {
+    content: "✦";
+    font-size: 1rem;
+    color: #c084fc;
+}
+
+.trust-item p {
+    color: #94a3b8;
+    line-height: 1.7;
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Feature Cards from the Image */
 .features {
-    background: white;
-    color: #333;
-    padding: 80px 20px;
+    padding: 60px 20px;
+    background: transparent;
 }
 
 .feature-grid {
     max-width: 1100px;
     margin: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    /* Reduced gap between cards */
+}
+
+.features h2{
+    text-align: center;
+    font-size: 2.2rem;
+    margin-bottom: 50px;
+    color: white;
 }
 
 .feature {
-    background: #f9fafb;
-    padding: 30px;
+    background: transparent;
+    /* Remove background to differ from trust cards */
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    /* Muted slate border */
+    padding: 25px;
     border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
 }
 
 .feature h3 {
-    color: #4f46e5;
+    color: #ffffff;
+    /* White heading instead of purple */
+    font-size: 1.3rem;
     margin-bottom: 10px;
 }
 
+.feature p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #94a3b8;
+}
+
+.feature:hover {
+    transform: translateY(-10px);
+    border-color: #6366f1;
+    background: rgba(30, 41, 59, 0.9);
+}
+
 .footer {
-    background: #0f172a;
-    text-align: center;
-    padding: 20px;
-    font-size: 0.9rem;
+    background: #020617;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 40px;
+    color: #475569;
 }

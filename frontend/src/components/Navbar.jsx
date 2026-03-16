@@ -1,56 +1,81 @@
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthContext";
-import { useLocation, Link } from "react-router-dom";
 import "../styles/navbar.css";
 
 export default function Navbar() {
-  const { isLoggedIn, role, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path) =>
-    location.pathname === path ? "nav-link active" : "nav-link";
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  const investorLinks = [
+    { to: "/investor/dashboard?tab=dashboard", label: "Dashboard",    tab: "dashboard" },
+    { to: "/investor/dashboard?tab=browse",    label: "Browse Ideas", tab: "browse"    },
+    { to: "/investor/dashboard?tab=liked",     label: "Watchlist",    tab: "liked"     },
+    { to: "/investor/dashboard?tab=trust",     label: "Why Innovest", tab: "trust"     },
+  ];
+
+  const innovatorLinks = [
+    { to: "/innovator/dashboard",  label: "My Dashboard" },
+    { to: "/innovator/post-idea",  label: "Post Idea"    },
+    { to: "/innovator/my-ideas",   label: "My Ideas"     },
+  ];
+
+  const links =
+    user?.role === "investor"  ? investorLinks  :
+    user?.role === "innovator" ? innovatorLinks :
+    [];
+
+  const currentTab = new URLSearchParams(location.search).get("tab") || "dashboard";
+
+  const isActive = (link) => {
+    const basePath = link.to.split("?")[0];
+    if (link.tab) {
+      return location.pathname === basePath && currentTab === link.tab;
+    }
+    return location.pathname === basePath;
+  };
 
   return (
-    <nav className="navbar">
-      <Link to="/" className="navbar-logo">Innovest</Link>
+    <nav className="navbar-unified">
+      {/* LEFT */}
+      <div className="nav-left">
+        <div className="nav-logo-icon" />
+        <Link to="/" className="navbar-logo">Innovest</Link>
+        {user && <span className="portal-badge">{user.role} Portal</span>}
+      </div>
 
-      <div className="navbar-links">
+      {/* CENTER */}
+      <div className="nav-center">
+        {links.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className={`nav-link ${isActive(link) ? "active" : ""}`}
+          >
+            {link.label}
+          </Link>
+        ))}
+      </div>
 
-        {/* ── NOT LOGGED IN ── */}
-        {!isLoggedIn && (
+      {/* RIGHT */}
+      <div className="nav-right">
+        {user ? (
           <>
-            <Link to="/login"    className={isActive("/login")}>Login</Link>
-            <Link to="/register" className={isActive("/register")}>Register</Link>
+            
+            <div className="nav-divider" />
+            <span className="user-name">👤 {user.name}</span>
+            <button onClick={handleLogout} className="logout-btn-unified">
+              Logout
+            </button>
           </>
+        ) : (
+          <Link to="/login" className="nav-link">Login</Link>
         )}
-
-        {/* ── ADMIN ── */}
-        {isLoggedIn && role === "admin" && (
-          <>
-            <Link to="/admin/dashboard" className={isActive("/admin/dashboard")}>Dashboard</Link>
-            <button className="nav-link logout-btn" onClick={logout}>Logout</button>
-          </>
-        )}
-
-        {/* ── INNOVATOR ── */}
-        {isLoggedIn && role === "innovator" && (
-          <>
-            <Link to="/innovator/dashboard" className={isActive("/innovator/dashboard")}>Home</Link>
-            <Link to="/innovator/my-ideas"  className={isActive("/innovator/my-ideas")}>My Ideas</Link>
-            <Link to="/innovator/post-idea" className={isActive("/innovator/post-idea")}>Post Idea</Link>
-            <Link to="/innovator/feedback"  className={isActive("/innovator/feedback")}>Feedback</Link>
-            <button className="nav-link logout-btn" onClick={logout}>Logout</button>
-          </>
-        )}
-
-        {/* ── INVESTOR ── */}
-        {isLoggedIn && role === "investor" && (
-          <>
-            <Link to="/investor/dashboard"    className={isActive("/investor/dashboard")}>Home</Link>
-            <Link to="/investor/browse-ideas" className={isActive("/investor/browse-ideas")}>Browse Ideas</Link>
-            <button className="nav-link logout-btn" onClick={logout}>Logout</button>
-          </>
-        )}
-
       </div>
     </nav>
   );

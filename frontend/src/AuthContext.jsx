@@ -1,31 +1,29 @@
-// AuthContext.jsx
 import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
+  });
 
   const login = (userRole, token, userData) => {
-    setIsLoggedIn(true);
-    setRole(userRole);
     localStorage.setItem("token", token);
     localStorage.setItem("role", userRole);
     localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("user", JSON.stringify(userData)); // ← was missing
+    setUser(userData); // ← was missing
   };
 
-  // ✅ YOU WERE MISSING THIS FUNCTION:
   const logout = () => {
-    setIsLoggedIn(false);
-    setRole(null);
     localStorage.clear();
-    window.location.href = "/login"; // Redirect on logout
+    setUser(null);
+    window.location.href = "/login";
   };
 
   return (
-    // Make sure logout is included in the value object below
-    <AuthContext.Provider value={{ isLoggedIn, role, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

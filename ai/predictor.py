@@ -6,9 +6,9 @@ import numpy as np
 
 app = FastAPI(title="Hybrid Startup Intelligence API")
 
-xai_model = joblib.load("xai_model.pkl")
-shap_explainer = joblib.load("shap_explainer.pkl")
-forecast_model = joblib.load("forecast_model.pkl")
+xai_model       = joblib.load("xai_model.pkl")
+shap_explainer  = joblib.load("shap_explainer.pkl")
+forecast_model  = joblib.load("forecast_model.pkl")
 
 # ==============================
 # REQUEST MODEL
@@ -16,106 +16,194 @@ forecast_model = joblib.load("forecast_model.pkl")
 
 class IdeaAnalysisRequest(BaseModel):
     age_first_funding_year: float
-    age_last_funding_year: float
-    relationships: int
-    funding_rounds: int
-    funding_total_usd: float
-    milestones: int
-    is_CA: int
-    is_web: int
-    founded_year: int
-    stage: str = "Idea"      # NEW — passed from Node route
-    domain: str = "General"  # NEW — passed from Node route
+    age_last_funding_year:  float
+    relationships:          int
+    funding_rounds:         int
+    funding_total_usd:      float
+    milestones:             int
+    is_CA:                  int
+    is_web:                 int
+    founded_year:           int
+    stage:  str = "Idea"
+    domain: str = "General"
 
 
 # ==============================
-# REALITY CHECK LAYER
+# STAGE BASELINE FLOORS
+# ==============================
+# Instead of crushing every idea to 5%, each stage has a realistic
+# MINIMUM score that reflects what "just being at that stage" means.
+# Source reasoning:
+#   Idea      → ~10–25% of ideas ever get traction   → floor 15%
+#   Prototype → builder has shipped something         → floor 25%
+#   MVP       → live product, some users              → floor 35%
+#   Live      → revenue / customers exist             → floor 45%
+
+STAGE_FLOOR = {
+    "Idea":      0.15,
+    "Prototype": 0.25,
+    "MVP":       0.35,
+    "Live":      0.45,
+}
+
+# Maximum penalty that can ever be applied (as a fraction of the raw score).
+# This stops a pile-up of penalties from killing a 56% raw score to 5%.
+# We never take more than 40% away from the raw score.
+MAX_PENALTY_FRACTION = 0.40
+
+
+# ==============================
+# REALITY CHECK LAYER  (improved)
 # ==============================
 
 def apply_reality_check(base_prob: float, data: IdeaAnalysisRequest):
     """
-    The ML model is trained on 'acquired' = success which causes overconfidence.
-    This layer applies evidence-based penalties to produce a realistic score.
+    Applies calibrated, non-stacking penalties to the raw ML score.
+
+    KEY CHANGES vs original:
+    1. Each penalty is SMALLER — they are risk flags, not death sentences.
+    2. Penalties do NOT stack blindly — total penalty is capped at
+       MAX_PENALTY_FRACTION of the raw score (40%).
+    3. Every stage has a FLOOR score so even the worst Idea still shows
+       something meaningful (15%) rather than 5%.
+    4. Bonuses are added for positive signals (MVP+, high relationships,
+       multiple funding rounds) to balance the picture.
+    5. Edtech penalty is context-aware — only applies if also low-funded.
     """
-    penalty = 0.0
-    warnings = []
 
-    # Penalty 1: Pure idea stage — no execution proven
+    individual_penalties = []
+    bonuses              = []
+    warnings             = []
+
+    # ── PENALTIES ──────────────────────────────────────────────────
+
+    # Stage penalty: only Idea and early Prototype get a penalty.
+    # MVP/Live are already positive signals — no extra penalty.
     if data.stage == "Idea":
-        penalty += 0.18
+        individual_penalties.append(0.08)
         warnings.append(
-            "Idea-stage startups have a historical success rate below 10%. "
-            "The AI model is adjusted downward to reflect that no execution has been proven yet."
+            "Idea stage: no execution proven yet. "
+            "Score reduced by 8% to reflect early-stage uncertainty. "
+            "Idea-stage ideas can absolutely succeed — this is a caution flag, not a verdict."
         )
-
-    # Penalty 2: Prototype but low milestones
     elif data.stage == "Prototype" and data.milestones <= 1:
-        penalty += 0.10
+        individual_penalties.append(0.05)
         warnings.append(
-            "Prototype stage with no significant milestones — product-market fit is still unvalidated."
+            "Prototype with limited milestones — product-market fit is still being validated. "
+            "Score reduced by 5%."
         )
 
-    # Penalty 3: Very low funding — underfunded startups fail fast
-    if data.funding_total_usd < 100000:
-        penalty += 0.12
+    # Funding penalty: only for critically low funding
+    if data.funding_total_usd < 50000:          # < ~₹42L — very critical
+        individual_penalties.append(0.10)
         warnings.append(
-            "Funding is critically low (< ₹83L). Most startups at this level run out of runway "
-            "before reaching product-market fit."
+            "Very low funding (< ₹42L). High risk of runway shortage before traction. "
+            "Score reduced by 10%."
+        )
+    elif data.funding_total_usd < 100000:        # < ~₹83L — low but not fatal
+        individual_penalties.append(0.05)
+        warnings.append(
+            "Low funding (< ₹83L). May struggle to reach product-market fit. "
+            "Score reduced by 5%."
         )
 
-    # Penalty 4: High-burn domains (Edtech, Fintech) with low funding
+    # High-burn domain + very low funding (only applies if BOTH conditions true)
     high_burn_domains = ["Edtech", "Fintech", "Healthcare"]
-    if data.domain in high_burn_domains and data.funding_total_usd < 500000:
-        penalty += 0.08
+    if data.domain in high_burn_domains and data.funding_total_usd < 200000:
+        individual_penalties.append(0.05)
         warnings.append(
-            f"{data.domain} startups typically require heavy investment in compliance, "
-            "customer acquisition, and infrastructure. Current funding may be insufficient."
+            f"{data.domain} requires higher capital for compliance and customer acquisition. "
+            "Score reduced by 5% due to domain-funding mismatch."
         )
 
-    # Penalty 5: Edtech-specific — post-COVID market correction warning
-    if data.domain == "Edtech":
-        penalty += 0.06
+    # Edtech market correction — ONLY if already low-funded (not a blanket penalty)
+    if data.domain == "Edtech" and data.funding_total_usd < 200000:
+        individual_penalties.append(0.03)
         warnings.append(
-            "The Edtech sector has seen major corrections post-2022 (e.g., Byju's, Unacademy). "
-            "High growth metrics do not guarantee sustainable business models in this space."
+            "Edtech sector has seen valuation corrections post-2022. "
+            "Score reduced by 3% — differentiated models can still thrive."
         )
 
-    # Penalty 6: No relationships = weak network
-    if data.relationships <= 3:
-        penalty += 0.07
+    # Weak network — only flag if very low
+    if data.relationships <= 2:
+        individual_penalties.append(0.05)
         warnings.append(
-            "Weak founder network detected. Startups with limited investor/advisor relationships "
-            "take 2–3x longer to close funding rounds."
+            "Very limited founder network (≤2 connections). "
+            "Score reduced by 5% — strong networks significantly speed up fundraising."
         )
 
-    # Hard cap — idea-stage startups should never exceed 60% regardless
-    adjusted = base_prob - penalty
-    if data.stage == "Idea" and adjusted > 0.60:
-        adjusted = 0.60
-        warnings.append(
-            "Score capped at 60% — statistical data shows idea-stage startups rarely exceed "
-            "this threshold for realistic success probability."
-        )
+    # ── BONUSES ────────────────────────────────────────────────────
+    # Give credit for positive signals to balance the penalties.
 
-    adjusted = max(0.05, round(adjusted, 4))
+    if data.stage in ("MVP", "Live"):
+        bonuses.append(0.05)
+
+    if data.milestones >= 3:
+        bonuses.append(0.04)
+
+    if data.funding_rounds >= 2:
+        bonuses.append(0.04)
+
+    if data.relationships >= 10:
+        bonuses.append(0.04)
+    elif data.relationships >= 5:
+        bonuses.append(0.02)
+
+    if data.is_web == 1:
+        bonuses.append(0.02)
+
+    # ── APPLY WITH CAP ─────────────────────────────────────────────
+
+    total_penalty = sum(individual_penalties)
+    total_bonus   = sum(bonuses)
+
+    # Cap: total penalty can never exceed MAX_PENALTY_FRACTION of raw score
+    max_allowed_penalty = base_prob * MAX_PENALTY_FRACTION
+    total_penalty = min(total_penalty, max_allowed_penalty)
+
+    adjusted = base_prob - total_penalty + total_bonus
+
+    # Apply stage floor — score can never go below the stage minimum
+    stage_floor = STAGE_FLOOR.get(data.stage, 0.15)
+    if adjusted < stage_floor:
+        warnings.append(
+            f"Score floored at {int(stage_floor*100)}% — the minimum realistic baseline "
+            f"for a {data.stage}-stage startup with a submitted idea."
+        )
+        adjusted = stage_floor
+
+    # Hard cap at 95% — nothing is certain
+    adjusted = min(adjusted, 0.95)
+    adjusted = round(adjusted, 4)
+
     return adjusted, warnings
 
 
 # ==============================
-# RULE-BASED STRATEGIC LAYER
+# STRATEGIC RULE ENGINE  (improved)
 # ==============================
 
 def strategic_rule_engine(data: IdeaAnalysisRequest, adjusted_prob: float):
-    if data.stage == "Idea" and data.milestones <= 1:
-        return "Early Idea — High Risk"
+    """
+    More nuanced labelling — no idea should be labelled purely as 'high risk'
+    without also acknowledging upside potential.
+    """
+    if data.stage == "Live" and data.milestones >= 3:
+        return "Proven Traction — Investment Ready"
+    elif data.stage == "MVP" and adjusted_prob >= 0.50:
+        return "Strong Growth Momentum"
     elif data.milestones >= 4 and data.funding_rounds >= 2:
         return "Strong Growth Momentum"
-    elif data.funding_total_usd < 200000:
-        return "Underfunded Risk"
     elif data.relationships > 15:
         return "Strong Network Advantage"
-    elif adjusted_prob < 0.40:
+    elif data.funding_total_usd < 100000 and data.stage == "Idea":
+        return "Early Idea — Needs Funding & Validation"   # less alarming label
+    elif data.funding_total_usd < 200000:
+        return "Underfunded — Seek Early Capital"          # actionable, not a verdict
+    elif adjusted_prob < 0.35:
         return "High Risk — Needs Validation"
+    elif adjusted_prob < 0.55:
+        return "Moderate Potential — Watch for Traction"
     else:
         return "Moderate Growth Potential"
 
@@ -151,18 +239,31 @@ def predict(data: IdeaAnalysisRequest):
 
     input_df = pd.DataFrame([input_values], columns=feature_names)
 
-    # ML Prediction (raw)
+    # ── ML Prediction (raw) ──
     raw_prob = xai_model.predict_proba(input_df)[0][1]
 
-    # Reality Check Layer
+    # ── Reality Check Layer ──
     adjusted_prob, warnings = apply_reality_check(float(raw_prob), data)
 
-    # SHAP Explanation
+    # ── SHAP Explanation ──
     shap_values = shap_explainer(input_df)
-    shap_vals = shap_values.values[0]
+    raw_shap = shap_values.values  # shape: (1, n_features) or (1, n_features, n_classes)
+    print(f"[SHAP DEBUG] raw_shap.shape = {raw_shap.shape}, dtype = {raw_shap.dtype}")
+
+    # Binary classifier TreeExplainer often returns shape (1, n_features, 2)
+    # We always want the SHAP values for class 1 (positive/success class)
+    if raw_shap.ndim == 3:
+        # shape (1, n_features, 2) → take class 1 → shape (1, n_features)
+        shap_vals = raw_shap[0, :, 1]
+    elif raw_shap.ndim == 2:
+        # shape (1, n_features) — already correct
+        shap_vals = raw_shap[0]
+    else:
+        # Fallback: flatten whatever we get
+        shap_vals = raw_shap.flatten()[:len(feature_names)]
 
     shap_dict = {
-        feature: float(np.mean(val)) if hasattr(val, '__len__') else float(val)
+        feature: float(val)
         for feature, val in zip(feature_names, shap_vals)
     }
 
@@ -170,20 +271,26 @@ def predict(data: IdeaAnalysisRequest):
         sorted(shap_dict.items(), key=lambda x: abs(x[1]), reverse=True)
     )
 
-    # Market Forecast
+    # ── Market Forecast ──
     future_years = np.array([
         [data.founded_year + 2],
         [data.founded_year + 5]
     ])
     valuation_predictions = forecast_model.predict(future_years)
 
-    # Strategic Label (uses adjusted prob)
+    # ── Strategic Label ──
     strategic_label = strategic_rule_engine(data, adjusted_prob)
 
+    # ── Penalty breakdown for frontend transparency ──
+    penalty_applied  = round((float(raw_prob) - adjusted_prob) * 100, 2)
+    # (negative means bonuses exceeded penalties)
+
     return {
-        "success_probability_percent": round(adjusted_prob * 100, 2),
-        "raw_model_score": round(float(raw_prob) * 100, 2),
-        "model_warnings": warnings,
+        "success_probability_percent":  round(adjusted_prob * 100, 2),
+        "raw_model_score":              round(float(raw_prob) * 100, 2),
+        "penalty_applied_percent":      penalty_applied,
+        "stage_floor_percent":          int(STAGE_FLOOR.get(data.stage, 0.15) * 100),
+        "model_warnings":               warnings,
         "explanation_sorted_by_impact": sorted_explanation,
         "market_forecast": {
             "valuation_in_2_years": round(float(valuation_predictions[0]), 2),

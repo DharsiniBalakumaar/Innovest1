@@ -1,74 +1,157 @@
-/* ===== Login Page ===== */
+/* ===== Login Page - High-End Dark Theme ===== */
 
 .login-container {
-    min-height: calc(100vh - 70px);
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #f8fbff;
+    /* Matching the homepage radial gradient */
+    background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
+    padding: 20px;
 }
 
 .login-card {
-    background-color: #ffffff;
+    background: rgba(255, 255, 255, 0.03);
+    /* Glass effect */
+    backdrop-filter: blur(15px);
     width: 100%;
-    max-width: 420px;
-    padding: 32px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    max-width: 400px;
+    padding: 40px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .login-title {
-    font-size: 24px;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 6px;
+    font-size: 28px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 8px;
+    text-align: center;
+    background: linear-gradient(to right, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .login-subtitle {
-    font-size: 14px;
-    color: #6b7280;
-    margin-bottom: 24px;
+    font-size: 15px;
+    color: #94a3b8;
+    margin-bottom: 32px;
+    text-align: center;
 }
 
 .login-group {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .login-group label {
     display: block;
     font-size: 14px;
     font-weight: 500;
-    margin-bottom: 6px;
-    color: #374151;
+    margin-bottom: 8px;
+    color: #cbd5e1;
 }
 
 .login-group input {
     width: 100%;
-    padding: 10px 12px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    font-size: 14px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 15px;
+    color: white;
+    transition: all 0.3s ease;
 }
 
 .login-group input:focus {
-    border-color: #1f4fd8;
+    border-color: #6366f1;
     outline: none;
-    box-shadow: 0 0 0 2px rgba(31, 79, 216, 0.15);
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
 }
 
 .login-button {
     width: 100%;
-    padding: 12px;
-    background-color: #1f4fd8;
+    padding: 14px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
     color: white;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
-    margin-top: 12px;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
 }
 
 .login-button:hover {
-    background-color: #1a43b8;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4);
+    filter: brightness(1.1);
+}
+
+/* ===== Login Footer Links ===== */
+
+.login-footer {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 20px;
+}
+
+.login-footer a {
+    color: #818cf8;
+    /* Soft Indigo */
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.login-footer a:hover {
+    color: #c084fc;
+    /* Transitions to Purple on hover */
+    text-shadow: 0 0 8px rgba(192, 132, 252, 0.4);
+}
+
+.login-footer span {
+    color: #94a3b8;
+    /* Muted slate for the "Don't have an account?" text */
+}
+
+/* Optional: Add a subtle animation to the links */
+.login-footer a {
+    position: relative;
+}
+
+.login-footer a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: #c084fc;
+    transition: width 0.3s ease;
+}
+
+.login-footer a:hover::after {
+    width: 100%;
 }
