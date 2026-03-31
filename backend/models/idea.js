@@ -9,6 +9,7 @@ const IdeaSchema = new mongoose.Schema({
   market:   String,
   revenue:  String,
   stage:    String,
+  funding_total_usd: { type: Number, default: 0 }, // ADD THIS LINE
   createdAt:{ type: Date, default: Date.now },
 
   // ── ADDED: Investor likes ──

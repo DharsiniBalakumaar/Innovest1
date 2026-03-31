@@ -26,7 +26,7 @@ const C = {
   dim:      "#484f58",
 };
 
-const DOMAINS  = ["AI", "Fintech", "Edtech", "Healthcare", "SaaS", "E-commerce", "Logistics", "AgriTech", "CleanTech", "Other"];
+const DOMAINS  = ["AI", "Fintech", "Edtech", "Healthcare"];
 const STAGES   = [
   { value:"Idea",      label:"💡 Idea",         desc:"Concept only, no product yet"   },
   { value:"Prototype", label:"🔧 Prototype",    desc:"Early working version"           },
@@ -35,7 +35,8 @@ const STAGES   = [
 ];
 
 const FIELDS = [
-  { name:"title",    label:"Idea Title",        type:"input",    placeholder:"e.g. AI-based Credit Scoring for Rural India",           hint:"Make it specific and memorable",                          required:true,  full:true  },
+  { name:"title",    label:"Idea Title",        type:"input",    placeholder:"e.g. AI-based Credit Scoring for Rural India",           hint:"Make it specific and memorable", required:true,  full:true  },
+  { name:"funding_total_usd", label:"Funding Raised (USD)", type:"number", placeholder:"e.g. 5000", hint:"Enter 0 if not funded yet. Values > 50,000 remove risk penalties.", required:false, full:false },
   { name:"problem",  label:"Problem Statement", type:"textarea", placeholder:"What problem are you solving? Who faces it? How often? What is the pain today?", hint:"More detail = better AI score. Aim for 100+ characters.", required:false, full:true, rows:5 },
   { name:"solution", label:"Your Solution",     type:"textarea", placeholder:"How does your idea solve it? What makes it different from existing solutions?",   hint:"Describe your approach, tech, or method clearly.",        required:false, full:true, rows:5 },
   { name:"market",   label:"Target Market",     type:"textarea", placeholder:"e.g. SMEs in India, college students, rural users, B2B SaaS clients...",         hint:"Who are your first customers?",                          required:false, full:false, rows:3 },
@@ -131,14 +132,32 @@ function ReasonCard({ reason, index }) {
 ══════════════════════════════════════ */
 export default function PostIdea() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ title:"", domain:"", problem:"", solution:"", market:"", revenue:"", stage:"" });
+  const [form, setForm] = useState({ 
+    title:"", 
+    domain:"", 
+    problem:"", 
+    solution:"", 
+    market:"", 
+    revenue:"", 
+    stage:"",
+    funding_total_usd: 0 // Initialize as 0
+  });
   const [loading, setLoading] = useState(false);
   const [similarityData, setSimilarityData] = useState(null);
   const [focusedField, setFocusedField] = useState(null);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    // Handle number conversion for funding
+    const value = e.target.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
+    setForm({ ...form, [e.target.name]: value });
+  };
 
-  const completedFields = Object.entries(form).filter(([k,v]) => v.trim().length > 0).length;
+  // This checks if the value is a string before trimming, or if it's a number > 0
+  const completedFields = Object.entries(form).filter(([k, v]) => {
+    if (typeof v === 'string') return v.trim().length > 0;
+    if (typeof v === 'number') return v > 0; // Or return true if 0 counts as "filled"
+    return !!v;
+  }).length;
   const totalFields = Object.keys(form).length;
   const completionPct = Math.round((completedFields / totalFields) * 100);
 
@@ -200,53 +219,84 @@ export default function PostIdea() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
 
-            {/* ── Title (full width) ── */}
-            <div style={{ gridColumn:"1/-1", background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
-              <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:"8px" }}>
-                Idea Title <span style={{ color:C.red }}>*</span>
-              </label>
-              <input
-                name="title" value={form.title} onChange={handleChange} required
-                placeholder="e.g. AI-based Credit Scoring for Rural India"
-                onFocus={()=>setFocusedField("title")} onBlur={()=>setFocusedField(null)}
-                style={inputStyle("title")}
-              />
-              <div style={{ fontSize:"9px", color:C.dim, marginTop:"5px" }}>Make it specific and memorable</div>
-            </div>
+        {/* ── Title (Full Width) ── */}
+          <div style={{ gridColumn: "1 / -1", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "16px" }}>
+            <label style={{ fontSize: "10px", fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: "8px" }}>
+              Idea Title <span style={{ color: C.red }}>*</span>
+            </label>
+            <input
+              name="title" value={form.title} onChange={handleChange} required
+              placeholder="e.g. AI-based Credit Scoring for Rural India"
+              onFocus={() => setFocusedField("title")} onBlur={() => setFocusedField(null)}
+              style={inputStyle("title")}
+            />
+            <div style={{ fontSize: "9px", color: C.dim, marginTop:"5px" }}>Make it specific and memorable</div>
+          </div>
 
-            {/* ── Domain ── */}
-            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
-              <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:"8px" }}>
-                Domain <span style={{ color:C.red }}>*</span>
-              </label>
-              <select name="domain" value={form.domain} onChange={handleChange} required
-                onFocus={()=>setFocusedField("domain")} onBlur={()=>setFocusedField(null)}
-                style={{ ...inputStyle("domain"), cursor:"pointer" }}>
-                <option value="">Select a domain</option>
-                {DOMAINS.map(d=><option key={d} value={d}>{d}</option>)}
-              </select>
-              <div style={{ fontSize:"9px", color:C.dim, marginTop:"5px" }}>Which sector does your idea belong to?</div>
-            </div>
+        {/* ── Funding Received (Left Column) ── */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div>
+            <label style={{ fontSize: "10px", fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: "8px" }}>
+            Funding Received ($)
+            </label>
+            <input
+              type="text" // Change from "number" to "text"
+              inputMode="numeric" // Shows numeric keypad on mobile
+              name="funding_total_usd"
+              value={form.funding_total_usd}
+              onChange={(e) => {
+                // Only allow numbers to be typed (regex check)
+                const val = e.target.value;
+                if (val === '' || /^[0-9\b]+$/.test(val)) {
+                  setForm({ ...form, funding_total_usd: val === '' ? 0 : parseFloat(val) });
+                }
+              }}
+              onFocus={() => setFocusedField("funding")}
+              onBlur={() => setFocusedField(null)}
+              style={inputStyle("funding")}
+            />
+          </div>
+          <div style={{ fontSize: "9px", color: C.dim, marginTop: "8px" }}>Current capital helps AI determine runway risk</div>
+        </div>
 
-            {/* ── Stage ── */}
-            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>
-              <label style={{ fontSize:"10px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:"8px" }}>Current Stage</label>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px" }}>
-                {STAGES.map(s=>(
-                  <button key={s.value} type="button" onClick={()=>setForm({...form,stage:s.value})} style={{
-                    padding:"8px 10px", borderRadius:"6px", cursor:"pointer", textAlign:"left",
-                    border:`1px solid ${form.stage===s.value?C.accent:C.border}`,
-                    background: form.stage===s.value?`rgba(88,166,255,.1)`:C.surface2,
-                    transition:"all .15s", fontFamily:"'IBM Plex Sans',sans-serif",
-                  }}>
-                    <div style={{ fontSize:"11px", fontWeight:"600", color:form.stage===s.value?C.accent:C.text }}>{s.label}</div>
-                    <div style={{ fontSize:"9px", color:C.muted, marginTop:"1px" }}>{s.desc}</div>
-                  </button>
-                ))}
-              </div>
+        {/* ── Domain (Right Column) ── */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div>
+            <label style={{ fontSize: "10px", fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: "8px" }}>
+            Domain <span style={{ color: C.red }}>*</span>
+            </label>
+            <select 
+              name="domain" value={form.domain} onChange={handleChange} required
+              style={{ ...inputStyle("domain"), cursor: "pointer" }}
+            >
+            <option value="">Select a domain</option>
+            {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div style={{ fontSize: "9px", color: C.dim, marginTop: "8px" }}>Which sector does your idea belong to?</div>
+        </div>
+
+          {/* ── Stage (Full Width to keep it clean) ── */}
+          <div style={{ gridColumn: "1 / -1", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "16px" }}>
+            <label style={{ fontSize: "10px", fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: "12px" }}>
+              Current Stage
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
+              {STAGES.map(s => (
+                <button key={s.value} type="button" onClick={() => setForm({ ...form, stage: s.value })} style={{
+                  padding: "10px", borderRadius: "6px", cursor: "pointer", textAlign: "left",
+                  border: `1px solid ${form.stage === s.value ? C.accent : C.border}`,
+                  background: form.stage === s.value ? `rgba(88,166,255,.1)` : C.surface2,
+                  transition: "all .15s", minHeight: "60px"
+                }}>
+                  <div style={{ fontSize: "11px", fontWeight: "600", color: form.stage === s.value ? C.accent : C.text }}>{s.label}</div>
+                  <div style={{ fontSize: "9px", color: C.muted, marginTop: "2px" }}>{s.desc}</div>
+                </button>
+              ))}
             </div>
+          </div>
 
             {/* ── Problem (full width) ── */}
             <div style={{ gridColumn:"1/-1", background:C.surface, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"16px" }}>

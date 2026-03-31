@@ -10,7 +10,7 @@ const protect = require("../middleware/authMiddleware");
 router.post("/upload-idea", protect, async (req, res) => {
   console.log("Received idea upload request:", req.body);
   try {
-    const { title, domain, problem, solution, market, revenue, stage } = req.body;
+    const { title, domain, problem, solution, market, revenue, stage, funding_total_usd } = req.body;
 
     // STEP 1 — CALL PYTHON SBERT DUPLICATE SERVICE
     const duplicateCheck = await axios.post(
@@ -40,6 +40,7 @@ router.post("/upload-idea", protect, async (req, res) => {
       market,
       revenue,
       stage,
+      funding_total_usd: funding_total_usd || 0, // SAVE THE REAL FUNDING
     });
 
     const savedIdea = await newIdea.save();

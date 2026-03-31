@@ -8,12 +8,10 @@ const client = require('../config/otpConfig');
 const router = express.Router();
 let otpStore = {};
 /* ---------- MULTER CONFIG ---------- */
+// BROKEN — stores "uploads/filename" in DB
 const storage = multer.diskStorage({
-  // Ensure this folder exists in your backend root
-  destination: "uploads/", 
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+  destination: (req, file, cb) => cb(null, "uploads/"),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 const upload = multer({ storage });
 
