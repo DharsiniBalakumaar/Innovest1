@@ -11,12 +11,17 @@ import InnovatorDashboard from "./pages/InnovatorDashboard";
 import InvestorDashboard from "./pages/InvestorDashboard";
 import InnovatorFeedback from "./pages/InnovatorFeedback";
 import ForgotPassword from "./pages/ForgotPassword";
+import MessagePortal from "./pages/MessagePortal";
+import MessageAlert from "./components/MessageAlert"; 
+import AlertBlocker from "./components/AlertBlocker"; 
+
 
 function App() {
   return (
     <Router>
       <div className="app-container">
         <Navbar />
+        <AlertBlocker />
         <div className="page-container">
           <Routes>
             <Route path="/"                      element={<HomePage />} />
@@ -35,11 +40,13 @@ function App() {
             <Route path="/investor/browse"  element={<Navigate to="/investor/dashboard?tab=browse"  replace />} />
             <Route path="/investor/liked"   element={<Navigate to="/investor/dashboard?tab=liked"   replace />} />
             <Route path="/investor/trust"   element={<Navigate to="/investor/dashboard?tab=trust"   replace />} />
+            <Route path="/messages" element={<MessagePortal />} />
 
             {/* Catch-all: redirect unknown routes to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
+        {/*<MessageAlert />*/}
       </div>
     </Router>
   );

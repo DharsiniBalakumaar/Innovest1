@@ -40,3 +40,16 @@
 .read-the-docs {
   color: #888;
 }
+
+/* App.css — add at the bottom */
+body.alert-blocking * {
+  pointer-events: none !important;
+}
+
+body.alert-blocking [data-alert-modal] {
+  pointer-events: all !important;
+}
+
+body.alert-blocking [data-alert-modal] * {
+  pointer-events: all !important;
+}

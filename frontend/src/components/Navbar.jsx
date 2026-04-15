@@ -1,6 +1,52 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import "../styles/navbar.css";
+
+// ── Polls unread message count every 15s ──
+function UnreadBadge() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const check = async () => {
+      try {
+        const r = await axios.get("http://localhost:5000/api/messages/unread-count", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setCount(r.data.count);
+      } catch {}
+    };
+
+    check();
+    const t = setInterval(check, 15000);
+    return () => clearInterval(t);
+  }, []);
+
+  if (count === 0) return null;
+
+  return (
+    <span style={{
+      background: "#6c5ce7",
+      color: "#fff",
+      borderRadius: "50%",
+      width: "18px",
+      height: "18px",
+      fontSize: "10px",
+      fontWeight: "700",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: "4px",
+      verticalAlign: "middle",
+    }}>
+      {count}
+    </span>
+  );
+}
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -40,6 +86,8 @@ export default function Navbar() {
     return location.pathname === basePath;
   };
 
+  const isMessagesActive = location.pathname === "/messages";
+
   return (
     <nav className="navbar-unified">
       {/* LEFT */}
@@ -60,13 +108,24 @@ export default function Navbar() {
             {link.label}
           </Link>
         ))}
+
+        {/* Messages link — shown for both roles when logged in */}
+        {user && (
+          <Link
+            to="/messages"
+            className={`nav-link ${isMessagesActive ? "active" : ""}`}
+            style={{ display: "inline-flex", alignItems: "center" }}
+          >
+            💬 Messages
+            <UnreadBadge />
+          </Link>
+        )}
       </div>
 
       {/* RIGHT */}
       <div className="nav-right">
         {user ? (
           <>
-            
             <div className="nav-divider" />
             <span className="user-name">👤 {user.name}</span>
             <button onClick={handleLogout} className="logout-btn-unified">
