@@ -110,7 +110,7 @@ export default function Navbar() {
         ))}
 
         {/* Messages link — shown for both roles when logged in */}
-        {user && (
+        {user && user.role !== "admin" && (
           <Link
             to="/messages"
             className={`nav-link ${isMessagesActive ? "active" : ""}`}

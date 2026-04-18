@@ -72,12 +72,20 @@ const STRATEGIC_ADVICE = {
   "Moderate Growth Potential":    { color:C.orange, bg:"rgba(240,136,62,.08)", border:"rgba(240,136,62,.2)", icon:"📈", advice:"Promising concept but needs stronger network or milestones." },
 };
 
+/* ── INR Formatter ── */
+const fmtINR = (n) => {
+  if (!n) return "₹0";
+  if (n >= 1e7) return `₹${(n / 1e7).toFixed(1)} Cr`;
+  if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)} L`;
+  return `₹${n.toLocaleString("en-IN")}`;
+};
+
 /* ── Tiny Helpers for Messages ── */
 const timeAgo = (d) => {
   const s = Math.floor((Date.now() - new Date(d)) / 1000);
-  if (s < 60)   return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400)return `${Math.floor(s / 3600)}h ago`;
+  if (s < 60)    return "just now";
+  if (s < 3600)  return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
 };
 const initials = (name = "?") => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -173,14 +181,14 @@ function MessagesView({ token, initialChat, onChatLoad }) {
   let userId = "";
   try { userId = JSON.parse(atob(token.split(".")[1])).id; } catch (e) { /* fallback */ }
 
-  const [threads,     setThreads]     = useState([]);
-  const [activeConv,  setActiveConv]  = useState(null);
-  const [messages,    setMessages]    = useState([]);
-  const [nudges,      setNudges]      = useState([]);
-  const [text,        setText]        = useState("");
-  const [loading,     setLoading]     = useState(true);
-  const [sending,     setSending]     = useState(false);
-  
+  const [threads,    setThreads]    = useState([]);
+  const [activeConv, setActiveConv] = useState(null);
+  const [messages,   setMessages]   = useState([]);
+  const [nudges,     setNudges]     = useState([]);
+  const [text,       setText]       = useState("");
+  const [loading,    setLoading]    = useState(true);
+  const [sending,    setSending]    = useState(false);
+
   const bottomRef = useRef(null);
   const pollRef   = useRef(null);
 
@@ -234,11 +242,11 @@ function MessagesView({ token, initialChat, onChatLoad }) {
       if (initialChat) {
         try {
           const r = await axios.post(`${API}/send`, {
-            ideaId: initialChat.ideaId,
+            ideaId:     initialChat.ideaId,
             receiverId: initialChat.receiverId,
-            content: `Hi ${initialChat.receiverName}, I am interested in your idea "${initialChat.ideaTitle}".`
+            content:    `Hi ${initialChat.receiverName}, I am interested in your idea "${initialChat.ideaTitle}".`
           }, { headers: tok() });
-          
+
           await loadThreads();
           setActiveConv(r.data.conversationId);
           await loadConv(r.data.conversationId);
@@ -272,7 +280,7 @@ function MessagesView({ token, initialChat, onChatLoad }) {
 
   return (
     <div style={{ display:"flex", height:"calc(100vh - 160px)", background: C.surface, border: `1px solid ${C.border}`, borderRadius: "8px", overflow:"hidden", animation: "fadeUp .4s ease-out" }}>
-      
+
       {/* ══ SIDEBAR ══ */}
       <div style={{ width:"300px", flexShrink:0, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", background: C.surface2 }}>
         <div style={{ padding:"16px", borderBottom:`1px solid ${C.border}` }}>
@@ -453,27 +461,62 @@ function Modal({ title, onClose, children }) {
 
 /* ══════════════════════════════ IDEA CARDS ══ */
 function IdeaCard({ idea, onView, onLike, likeLoading }) {
-  const stageColor=STAGE_COLORS[idea.stage]||C.accent;
-  const [hov,setHov]=useState(false);
+  const stageColor = STAGE_COLORS[idea.stage] || C.accent;
+  const [hov, setHov] = useState(false);
+
+  const budgetPct   = idea.budget > 0 ? Math.min(100, Math.round((idea.currentFunding / idea.budget) * 100)) : 0;
+  const budgetColor = idea.isGoalReached ? C.green : budgetPct > 60 ? C.accent : budgetPct > 30 ? C.yellow : C.red;
+
   return (
-    <div style={{ background:hov?C.surface2:C.surface, border:`1px solid ${hov?C.accent+"40":C.border}`, borderRadius:"8px", padding:"14px", transition:"all .2s" }} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}>
-      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px" }}>
-        <span style={{ fontSize:"9px",fontWeight:"700",padding:"2px 7px",borderRadius:"3px",background:`${stageColor}18`,color:stageColor,border:`1px solid ${stageColor}30`,textTransform:"uppercase",letterSpacing:"0.06em" }}>{idea.domain}</span>
-        <span style={{ fontSize:"9px",color:C.muted,fontWeight:"600" }}>{idea.stage}</span>
+    <div style={{ background: hov ? C.surface2 : C.surface, border:`1px solid ${hov ? C.accent + "40" : C.border}`, borderRadius:"8px", padding:"14px", transition:"all .2s" }}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px" }}>
+        <span style={{ fontSize:"9px", fontWeight:"700", padding:"2px 7px", borderRadius:"3px", background:`${stageColor}18`, color:stageColor, border:`1px solid ${stageColor}30`, textTransform:"uppercase", letterSpacing:"0.06em" }}>{idea.domain}</span>
+        <span style={{ fontSize:"9px", color:C.muted, fontWeight:"600" }}>{idea.stage}</span>
       </div>
-      <div style={{ fontSize:"13px",fontWeight:"700",color:C.text,marginBottom:"5px",lineHeight:"1.3" }}>{idea.title}</div>
-      <div style={{ fontSize:"10px",color:C.muted,lineHeight:"1.6",marginBottom:"10px" }}>{idea.problem?.substring(0,110)}...</div>
-      <div style={{ height:"1px",background:C.border,margin:"0 0 8px" }}/>
-      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-        <span style={{ fontSize:"10px",color:C.muted }}>👤 {idea.innovatorId?.name||"Unknown"}</span>
-        <div style={{ display:"flex",alignItems:"center",gap:"5px" }}>
-          <span style={{ fontSize:"10px",color:C.muted,fontFamily:"'IBM Plex Mono',monospace" }}>{idea.likeCount||0}</span>
-          <button onClick={onLike} disabled={likeLoading} style={{ width:"26px",height:"26px",borderRadius:"4px",border:`1px solid ${idea.likedByMe?"rgba(248,81,73,.4)":C.border}`,background:idea.likedByMe?"rgba(248,81,73,.1)":"transparent",color:idea.likedByMe?C.red:C.dim,cursor:"pointer",fontSize:"12px",display:"flex",alignItems:"center",justifyContent:"center" }}>
-            {likeLoading?"·":idea.likedByMe?"❤️":"🤍"}
+
+      <div style={{ fontSize:"13px", fontWeight:"700", color:C.text, marginBottom:"5px", lineHeight:"1.3" }}>{idea.title}</div>
+      <div style={{ fontSize:"10px", color:C.muted, lineHeight:"1.6", marginBottom:"8px" }}>{idea.problem?.substring(0, 110)}...</div>
+
+      {/* ── Budget bar ── */}
+      <div style={{ background:C.surface2, border:`1px solid ${C.border}`, borderRadius:"5px", padding:"8px 10px", marginBottom:"8px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"4px" }}>
+          <span style={{ fontSize:"9px", color:C.muted }}>Funding Goal</span>
+          <span style={{ fontSize:"9px", fontWeight:"700", color:budgetColor, fontFamily:"'IBM Plex Mono',monospace" }}>
+            {idea.budget > 0 ? `${budgetPct}%` : "No goal set"}{idea.isGoalReached ? " ✅" : ""}
+          </span>
+        </div>
+        {idea.budget > 0 && (
+          <>
+            <div style={{ height:"4px", background:C.surface, borderRadius:"3px", overflow:"hidden", marginBottom:"4px" }}>
+              <div style={{ width:`${budgetPct}%`, height:"100%", background:budgetColor, borderRadius:"3px", transition:"width .8s ease" }}/>
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <span style={{ fontSize:"9px", color:C.muted }}>
+                Raised: <span style={{ color:C.text, fontWeight:"600" }}>{fmtINR(idea.currentFunding)}</span>
+              </span>
+              <span style={{ fontSize:"9px", color:C.muted }}>
+                Goal: <span style={{ color:C.text, fontWeight:"600" }}>{fmtINR(idea.budget)}</span>
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={{ height:"1px", background:C.border, margin:"0 0 8px" }}/>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <span style={{ fontSize:"10px", color:C.muted }}>👤 {idea.innovatorId?.name || "Unknown"}</span>
+        <div style={{ display:"flex", alignItems:"center", gap:"5px" }}>
+          <span style={{ fontSize:"10px", color:C.muted, fontFamily:"'IBM Plex Mono',monospace" }}>{idea.likeCount || 0}</span>
+          <button onClick={onLike} disabled={likeLoading}
+            style={{ width:"26px", height:"26px", borderRadius:"4px", border:`1px solid ${idea.likedByMe ? "rgba(248,81,73,.4)" : C.border}`, background:idea.likedByMe ? "rgba(248,81,73,.1)" : "transparent", color:idea.likedByMe ? C.red : C.dim, cursor:"pointer", fontSize:"12px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {likeLoading ? "·" : idea.likedByMe ? "❤️" : "🤍"}
           </button>
         </div>
       </div>
-      <button onClick={onView} style={{ marginTop:"8px",width:"100%",padding:"7px",borderRadius:"5px",border:`1px solid ${hov?C.accent+"40":C.border}`,background:hov?"rgba(88,166,255,.05)":"transparent",color:hov?C.accent:C.muted,cursor:"pointer",fontSize:"10px",fontWeight:"600",transition:"all .2s",fontFamily:"'IBM Plex Sans',sans-serif" }}>
+      <button onClick={onView}
+        style={{ marginTop:"8px", width:"100%", padding:"7px", borderRadius:"5px", border:`1px solid ${hov ? C.accent + "40" : C.border}`, background:hov ? "rgba(88,166,255,.05)" : "transparent", color:hov ? C.accent : C.muted, cursor:"pointer", fontSize:"10px", fontWeight:"600", transition:"all .2s", fontFamily:"'IBM Plex Sans',sans-serif" }}>
         🤖 Analyse with AI
       </button>
     </div>
@@ -481,18 +524,38 @@ function IdeaCard({ idea, onView, onLike, likeLoading }) {
 }
 
 function MiniCard({ idea, onView, onLike, likeLoading }) {
-  const sc=STAGE_COLORS[idea.stage]||C.accent;
+  const sc        = STAGE_COLORS[idea.stage] || C.accent;
+  const budgetPct = idea.budget > 0 ? Math.min(100, Math.round((idea.currentFunding / idea.budget) * 100)) : 0;
+  const bColor    = idea.isGoalReached ? C.green : budgetPct > 60 ? C.accent : budgetPct > 30 ? C.yellow : C.red;
+
   return (
-    <div style={{ background:C.surface2,border:`1px solid ${C.border}`,borderRadius:"6px",padding:"10px",display:"flex",flexDirection:"column",gap:"5px" }}>
-      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-        <span style={{ fontSize:"9px",fontWeight:"700",color:sc,textTransform:"uppercase" }}>{idea.domain}</span>
-        <span style={{ fontSize:"9px",color:C.muted }}>{idea.stage}</span>
+    <div style={{ background:C.surface2, border:`1px solid ${C.border}`, borderRadius:"6px", padding:"10px", display:"flex", flexDirection:"column", gap:"5px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <span style={{ fontSize:"9px", fontWeight:"700", color:sc, textTransform:"uppercase" }}>{idea.domain}</span>
+        <span style={{ fontSize:"9px", color:C.muted }}>{idea.stage}</span>
       </div>
-      <div style={{ fontSize:"11px",fontWeight:"700",color:C.text,lineHeight:"1.3" }}>{idea.title}</div>
-      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"3px" }}>
-        <button onClick={onView} style={{ fontSize:"9px",fontWeight:"600",color:C.accent,background:"transparent",border:`1px solid rgba(88,166,255,.3)`,padding:"3px 8px",borderRadius:"3px",cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif" }}>Analyse →</button>
-        <button onClick={onLike} disabled={likeLoading} style={{ width:"22px",height:"22px",borderRadius:"3px",border:`1px solid ${idea.likedByMe?"rgba(248,81,73,.4)":C.border}`,background:idea.likedByMe?"rgba(248,81,73,.1)":"transparent",color:idea.likedByMe?C.red:C.dim,cursor:"pointer",fontSize:"11px",display:"flex",alignItems:"center",justifyContent:"center" }}>
-          {likeLoading?"·":idea.likedByMe?"❤️":"🤍"}
+      <div style={{ fontSize:"11px", fontWeight:"700", color:C.text, lineHeight:"1.3" }}>{idea.title}</div>
+
+      {/* Mini budget bar */}
+      {idea.budget > 0 && (
+        <div>
+          <div style={{ height:"3px", background:C.surface, borderRadius:"2px", overflow:"hidden", marginBottom:"2px" }}>
+            <div style={{ width:`${budgetPct}%`, height:"100%", background:bColor, borderRadius:"2px" }}/>
+          </div>
+          <div style={{ fontSize:"8px", color:C.muted }}>
+            {fmtINR(idea.currentFunding)} / {fmtINR(idea.budget)} {idea.isGoalReached ? "✅" : `(${budgetPct}%)`}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"3px" }}>
+        <button onClick={onView}
+          style={{ fontSize:"9px", fontWeight:"600", color:C.accent, background:"transparent", border:"1px solid rgba(88,166,255,.3)", padding:"3px 8px", borderRadius:"3px", cursor:"pointer", fontFamily:"'IBM Plex Sans',sans-serif" }}>
+          Analyse →
+        </button>
+        <button onClick={onLike} disabled={likeLoading}
+          style={{ width:"22px", height:"22px", borderRadius:"3px", border:`1px solid ${idea.likedByMe ? "rgba(248,81,73,.4)" : C.border}`, background:idea.likedByMe ? "rgba(248,81,73,.1)" : "transparent", color:idea.likedByMe ? C.red : C.dim, cursor:"pointer", fontSize:"11px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {likeLoading ? "·" : idea.likedByMe ? "❤️" : "🤍"}
         </button>
       </div>
     </div>
@@ -517,11 +580,9 @@ export default function InvestorDashboard() {
   const [filterDomain,    setFilterDomain]    = useState("All");
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeView = searchParams.get("tab") || "dashboard";
+  const activeView    = searchParams.get("tab") || "dashboard";
   const setActiveView = (tab) => setSearchParams({ tab });
 
-  // For jumping to a specific chat when clicking "Message Innovator" in the Modal
-  // FIXED: This state was incorrectly duplicated inside a conditional render below.
   const [preselectedChat, setPreselectedChat] = useState(null);
 
   useEffect(()=>{ fetchAll(); },[]);
@@ -632,10 +693,10 @@ export default function InvestorDashboard() {
             </div>
 
             <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"12px",marginBottom:"16px" }}>
-              <KpiTile label="Total Ideas"    value={stats?.total??0}              sub="Submitted on platform"   color={C.accent}  icon="💡"/>
-              <KpiTile label="Your Watchlist" value={stats?.likedByMe??0}          sub="Ideas you have liked"    color={C.red}     icon="❤️"/>
-              <KpiTile label="Domains"        value={stats?.ideasByDomain?.length??0} sub="Unique sectors"       color={C.green}   icon="🏷️"/>
-              <KpiTile label="Stages Tracked" value={stats?.ideasByStage?.length??0}  sub="MVP · Prototype · Live" color={C.purple} icon="📊"/>
+              <KpiTile label="Total Ideas"    value={stats?.total??0}                   sub="Submitted on platform"    color={C.accent}  icon="💡"/>
+              <KpiTile label="Your Watchlist" value={stats?.likedByMe??0}               sub="Ideas you have liked"     color={C.red}     icon="❤️"/>
+              <KpiTile label="Domains"        value={stats?.ideasByDomain?.length??0}   sub="Unique sectors"           color={C.green}   icon="🏷️"/>
+              <KpiTile label="Stages Tracked" value={stats?.ideasByStage?.length??0}    sub="MVP · Prototype · Live"   color={C.purple}  icon="📊"/>
             </div>
 
             <div style={{ display:"grid",gridTemplateColumns:"2fr 1fr",gap:"12px",marginBottom:"16px" }}>
@@ -687,10 +748,10 @@ export default function InvestorDashboard() {
                 <table style={{ width:"100%",borderCollapse:"collapse" }}>
                   <tbody>
                     {[
-                      {label:"Total Ideas",          value:stats?.total??0,                color:C.text},
-                      {label:"Your Watchlist",       value:stats?.likedByMe??0,            color:C.purple},
-                      {label:"Unique Domains",       value:stats?.ideasByDomain?.length??0,color:C.text},
-                      {label:"Stage Breakdown",      value:stats?.ideasByStage?.length??0, color:C.text},
+                      {label:"Total Ideas",     value:stats?.total??0,                 color:C.text},
+                      {label:"Your Watchlist",  value:stats?.likedByMe??0,             color:C.purple},
+                      {label:"Unique Domains",  value:stats?.ideasByDomain?.length??0, color:C.text},
+                      {label:"Stage Breakdown", value:stats?.ideasByStage?.length??0,  color:C.text},
                       ...( stats?.ideasByStage?.map(s=>({ label:`  ↳ ${s.stage}`, value:s.count, color:STAGE_COLORS[s.stage]||C.muted })) || [] ),
                       ...( stats?.ideasByDomain?.slice(0,3).map(d=>({ label:`  ↳ ${d.domain}`, value:d.count, color:C.muted })) || [] ),
                     ].map((row,i)=>(
@@ -752,10 +813,10 @@ export default function InvestorDashboard() {
 
         {/* ════ MESSAGES ════ */}
         {activeView==="messages" && (
-          <MessagesView 
-            token={token} 
-            initialChat={preselectedChat} 
-            onChatLoad={() => setPreselectedChat(null)} 
+          <MessagesView
+            token={token}
+            initialChat={preselectedChat}
+            onChatLoad={() => setPreselectedChat(null)}
           />
         )}
 
@@ -769,16 +830,16 @@ export default function InvestorDashboard() {
                 Built on verified data, regulatory compliance and AI-powered intelligence.
               </div>
             </div>
-            
+
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"16px" }}>
               <div style={{ background:C.surface,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"16px" }}>
                 <SectionHeader title="Platform Security Features" sub="What is actually built into Innovest"/>
                 <div style={{ display:"flex",flexDirection:"column",gap:"8px" }}>
                   {[
                     {icon:"🔐",title:"Multi-Factor Authentication",  desc:"Every account is protected with OTP-based MFA."},
-                    {icon:"🔑",title:"JWT-Based Session Security",   desc:"All API routes are protected with signed JWT tokens."},
-                    {icon:"🛡️",title:"Password Hashing (bcrypt)",   desc:"Passwords are never stored in plain text."},
-                    {icon:"📁",title:"Document Upload Verification", desc:"Identity proof uploads are required at registration."},
+                    {icon:"🔑",title:"JWT-Based Session Security",    desc:"All API routes are protected with signed JWT tokens."},
+                    {icon:"🛡️",title:"Password Hashing (bcrypt)",    desc:"Passwords are never stored in plain text."},
+                    {icon:"📁",title:"Document Upload Verification",  desc:"Identity proof uploads are required at registration."},
                   ].map((t,i)=>(
                     <div key={i} style={{ display:"flex",gap:"10px",padding:"10px",background:C.surface2,borderRadius:"6px",border:`1px solid ${C.border}` }}>
                       <span style={{ fontSize:"16px",flexShrink:0 }}>{t.icon}</span>
@@ -842,6 +903,27 @@ export default function InvestorDashboard() {
             <MetaRow label="Market"   value={selectedIdea.market}/>
             <MetaRow label="Revenue"  value={selectedIdea.revenue}/>
           </div>
+
+          {/* ── Budget summary row in modal ── */}
+          {selectedIdea?.budget > 0 && (
+            <div style={{ background:C.surface2, border:`1px solid ${C.border}`, borderRadius:"7px", padding:"12px 14px", marginBottom:"12px" }}>
+              <div style={{ fontSize:"9px", fontWeight:"700", color:C.muted, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:"8px" }}>💰 Funding Goal</div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
+                <span style={{ fontSize:"10px", color:C.muted }}>Raised</span>
+                <span style={{ fontSize:"11px", fontWeight:"700", color:C.text, fontFamily:"'IBM Plex Mono',monospace" }}>{fmtINR(selectedIdea.currentFunding)}</span>
+              </div>
+              <div style={{ height:"6px", background:C.surface, borderRadius:"3px", overflow:"hidden", marginBottom:"5px" }}>
+                <div style={{ width:`${selectedIdea.fundingProgress || 0}%`, height:"100%",
+                  background: selectedIdea.isGoalReached ? C.green : (selectedIdea.fundingProgress || 0) > 60 ? C.accent : C.yellow,
+                  borderRadius:"3px", transition:"width .8s ease" }}/>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between" }}>
+                <span style={{ fontSize:"9px", color:C.muted }}>{selectedIdea.fundingProgress || 0}% funded</span>
+                <span style={{ fontSize:"9px", color:C.muted }}>Goal: {fmtINR(selectedIdea.budget)} {selectedIdea.isGoalReached ? "✅ Reached" : ""}</span>
+              </div>
+            </div>
+          )}
+
           <div style={{ display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",background:C.surface2,border:`1px solid ${C.border}`,borderRadius:"7px",marginBottom:"14px" }}>
             <button onClick={e=>handleLike(selectedIdea._id,e)} disabled={likeLoading[selectedIdea._id]} style={{
               padding:"7px 16px",borderRadius:"5px",border:`1px solid ${selectedIdea.likedByMe?"rgba(248,81,73,.4)":C.border}`,
@@ -851,18 +933,18 @@ export default function InvestorDashboard() {
               {likeLoading[selectedIdea._id]?"...":selectedIdea.likedByMe?"❤️ Liked":"🤍 Add to Watchlist"}
             </button>
             <span style={{ fontSize:"10px",color:C.muted }}>{selectedIdea.likeCount||0} investor{(selectedIdea.likeCount||0)!==1?"s":""} watching</span>
-            
+
             <button
-              onClick={() => { 
+              onClick={() => {
                 setPreselectedChat({
-                  ideaId: selectedIdea._id,
-                  receiverId: selectedIdea.innovatorId._id,
-                  ideaTitle: selectedIdea.title,
+                  ideaId:       selectedIdea._id,
+                  receiverId:   selectedIdea.innovatorId._id,
+                  ideaTitle:    selectedIdea.title,
                   receiverName: selectedIdea.innovatorId.name
                 });
-                setSelectedIdea(null); 
-                setIdeaAnalysis(null); 
-                setActiveView("messages"); 
+                setSelectedIdea(null);
+                setIdeaAnalysis(null);
+                setActiveView("messages");
               }}
               style={{ marginLeft:"auto",padding:"7px 14px",borderRadius:"5px",border:`1px solid rgba(88,166,255,.3)`,background:"rgba(88,166,255,.06)",color:C.accent,cursor:"pointer",fontSize:"11px",fontWeight:"600",fontFamily:"'IBM Plex Sans',sans-serif" }}
             >
@@ -879,21 +961,19 @@ export default function InvestorDashboard() {
               <p style={{ color:C.muted,marginTop:"10px",fontSize:"11px" }}>Running AI prediction engine...</p>
             </div>
           ) : ideaAnalysis ? (()=>{
-            const score     = ideaAnalysis.success_probability_percent;
-            const rawScore  = ideaAnalysis.raw_model_score;
-            const penalty   = Math.max(0, rawScore - score);
+            const score    = ideaAnalysis.success_probability_percent;
+            const rawScore = ideaAnalysis.raw_model_score;
+            const penalty  = Math.max(0, rawScore - score);
             const {pros,cons} = getReasons(ideaAnalysis.explanation_sorted_by_impact);
-            
-            // Note: Removed the nested preselectedChat state hook from here!
-            
-            const strategic = STRATEGIC_ADVICE[ideaAnalysis.strategic_assessment] || STRATEGIC_ADVICE["Moderate Growth Potential"];
+
+            const strategic  = STRATEGIC_ADVICE[ideaAnalysis.strategic_assessment] || STRATEGIC_ADVICE["Moderate Growth Potential"];
             const scoreColor = score>=70?C.green:score>=40?C.orange:C.red;
 
             const rawShapEntries = Object.entries(ideaAnalysis.explanation_sorted_by_impact||{})
               .map(([k,v])=>({ name:FEATURE_INFO[k]?.name||k, raw:v, abs:Math.abs(v), positive:v>=0 }))
               .sort((a,b)=>b.abs-a.abs)
               .slice(0,8);
-            const maxAbs = Math.max(...rawShapEntries.map(d=>d.abs), 0.0001);
+            const maxAbs   = Math.max(...rawShapEntries.map(d=>d.abs), 0.0001);
             const shapData = rawShapEntries.map(d=>({
               ...d,
               barWidth: Math.round((d.abs/maxAbs)*100),

@@ -8,7 +8,7 @@ const messageSchema = new mongoose.Schema({
   receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   content:  { type: String, required: true },
   isRead:   { type: Boolean, default: false },
-  messageType: { type: String, enum: ["user", "system"], default: "user" },
+  messageType: { type: String, enum: ["text", "system", "not-interested"], default: "text", },
 }, { timestamps: true });
 
 module.exports = mongoose.model("Message", messageSchema);

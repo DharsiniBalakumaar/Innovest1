@@ -21,8 +21,8 @@ export default function MessageAlert() {
     if (!token || isOnMessages) return;
     try {
       const r = await axios.get(`${API}/threads`, { headers: tok() });
-      // only threads with unread messages
-      const unread = r.data.filter(t => t.unreadCount > 0);
+      // only threads with unread messages that are not blocked
+      const unread = r.data.filter(t => t.unreadCount > 0 && !t.isBlocked);
       setAlerts(unread);
     } catch (e) { console.error(e); }
   }, [isOnMessages]);
@@ -40,20 +40,21 @@ export default function MessageAlert() {
   };
 
   const handleNotInterested = async (thread) => {
-  setSending(prev => ({ ...prev, [thread.conversationId]: true }));
-  try {
-    await axios.post(`${API}/not-interested`, {
-      conversationId: thread.conversationId,
-      ideaId:         thread.ideaId,
-      receiverId:     thread.otherUser._id,
-      ideaTitle:      thread.ideaTitle,
-    }, { headers: tok() });
-    setDismissed(prev => new Set([...prev, thread.conversationId]));
-  } catch (e) { console.error(e); }
-  finally {
-    setSending(prev => ({ ...prev, [thread.conversationId]: false }));
-  }
-};
+    setSending(prev => ({ ...prev, [thread.conversationId]: true }));
+    try {
+      // ✅ FIXED: use the correct route — conversationId in the URL, empty body
+      await axios.post(
+        `${API}/not-interested/${thread.conversationId}`,
+        {},
+        { headers: tok() }
+      );
+      setDismissed(prev => new Set([...prev, thread.conversationId]));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSending(prev => ({ ...prev, [thread.conversationId]: false }));
+    }
+  };
 
   const handleDismiss = (convId) => {
     setDismissed(prev => new Set([...prev, convId]));
@@ -232,7 +233,7 @@ function AlertCard({ thread, onReply, onNotInterested, onDismiss, sending }) {
           💬 Reply
         </button>
 
-        {/* Not interested → sends auto-message */}
+        {/* Not interested → blocks the conversation */}
         <button
           onClick={onNotInterested}
           disabled={sending}
